@@ -19,15 +19,19 @@ import {
 } from "firebase/auth";
 import { auth, db } from "../../src/config/firebase";
 import { doc, setDoc } from "firebase/firestore";
+import { Eye, EyeOff } from "react-feather";
 
 export function SignupFormDemo() {
   const [email, setEmail] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const navigate = useNavigate();
-
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -99,7 +103,7 @@ export function SignupFormDemo() {
           Ready to get started? Join us now!
         </p>
         <form className="my-8" onSubmit={handleSubmit} autoComplete="off">
-          <div className="grid grid-cols-1 gap-4 mb-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 mb-1 md:grid-cols-2">
             <LabelInputContainer className="mb-4">
               <Label htmlFor="firstName" className="text-white">
                 First Name
@@ -147,15 +151,28 @@ export function SignupFormDemo() {
             <Label htmlFor="password" className="text-white">
               Password
             </Label>
-            <Input
-              id="password"
-              placeholder="••••••••"
-              type="password"
-              className={cn("bg-zinc-800 text-white border border-gray-500")}
-              autoComplete="new-password"
-              onChange={(e) => setPassword(e.target.value)}
-              value={password}
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                placeholder="••••••••"
+                type={showPassword ? "text" : "password"}
+                className={cn("bg-zinc-800 text-white border border-gray-500")}
+                autoComplete="current-password"
+                onChange={(e) => setPassword(e.target.value)}
+                value={password}
+              />
+              <button
+                type="button"
+                onClick={togglePasswordVisibility}
+                className="absolute inset-y-0 right-1 flex items-center px-3"
+              >
+                {showPassword ? (
+                  <Eye className="text-white w-5 h-5" />
+                ) : (
+                  <EyeOff className="text-white w-5 h-5" />
+                )}
+              </button>
+            </div>
           </LabelInputContainer>
           <LabelInputContainer className="mb-4">
             <Label htmlFor="confirmPassword" className="text-white">

@@ -17,22 +17,25 @@ import {
 } from "firebase/auth";
 import { auth, db } from "../../src/config/firebase";
 import Cookies from "js-cookie";
+import { Eye, EyeOff } from "react-feather";
 
 export function SigninFormDemo() {
   const [customToken, setCustomToken] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
-
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
   useEffect(() => {
     const authToken = Cookies.get("authToken");
 
     if (authToken) {
       // Attempt to sign in with the custom token
-      signInWithCustomToken(auth, authToken)
-        .then(() => {
-          navigate("/dashboard");
-        })
+      signInWithCustomToken(auth, authToken).then(() => {
+        navigate("/dashboard");
+      });
     } else {
       // Check if the user is already authenticated
       const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -140,18 +143,39 @@ export function SigninFormDemo() {
             />
           </LabelInputContainer>
           <LabelInputContainer className="mb-4">
-            <Label htmlFor="password" className="text-white">
-              Password
-            </Label>
-            <Input
-              id="password"
-              placeholder="••••••••"
-              type="password"
-              className={cn("bg-zinc-800 text-white border border-gray-500")}
-              autoComplete="current-password"
-              onChange={(e) => setPassword(e.target.value)}
-              value={password}
-            />
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password" className="text-white">
+                Password
+              </Label>
+              <p className="text-md text-neutral-300 mb-0 mr-1">
+                Forget your password?{" "}
+                <Link className="text-white font-bold" to="/forgotpassword">
+                  Reset here
+                </Link>
+              </p>
+            </div>
+            <div className="relative">
+              <Input
+                id="password"
+                placeholder="••••••••"
+                type={showPassword ? "text" : "password"}
+                className={cn("bg-zinc-800 text-white border border-gray-500")}
+                autoComplete="current-password"
+                onChange={(e) => setPassword(e.target.value)}
+                value={password}
+              />
+              <button
+                type="button"
+                onClick={togglePasswordVisibility}
+                className="absolute inset-y-0 right-1 flex items-center px-3"
+              >
+                {showPassword ? (
+                  <Eye className="text-white w-5 h-5" />
+                ) : (
+                  <EyeOff className="text-white w-5 h-5" />
+                )}
+              </button>
+            </div>
           </LabelInputContainer>
 
           <button

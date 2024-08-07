@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { query, where, getDocs, collection } from "firebase/firestore";
 import { db } from "../../src/config/firebase";
 import { onAuthStateChanged } from "firebase/auth";
@@ -7,29 +7,32 @@ import { auth } from "../../src/config/firebase";
 import Cookies from "js-cookie";
 
 export function Dashboard() {
-  const location = useLocation();
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const email = location.state?.email?.toLowerCase().trim();
+  const [email, setEmail] = useState(""); // State to hold the email from cookies
 
   useEffect(() => {
-    // if (!email) {
-    //   navigate("/"); // Redirect to login if email is not available
-    //   return;
-    // }
-    const email = Cookies.get("email");
     const authToken = Cookies.get("authToken");
     if (!authToken) {
       navigate("/");
       return;
     }
 
+    // Retrieve the email from cookies
+    const storedEmail = Cookies.get("email");
+    if (!storedEmail) {
+      navigate("/");
+      return;
+    }
+
+    setEmail(storedEmail); // Update state with the email
+
     const fetchUserData = async () => {
       try {
         // Create a query to find the document where the email field matches
-        const q = query(collection(db, "users"), where("email", "==", email));
+        const q = query(collection(db, "users"), where("email", "==", storedEmail.toLowerCase().trim()));
         const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
@@ -59,7 +62,7 @@ export function Dashboard() {
 
     return () => unsubscribe(); // Cleanup on unmount
 
-  }, [email, navigate]);
+  }, [navigate]);
 
   if (loading) {
     return <p>Loading...</p>;
@@ -72,9 +75,11 @@ export function Dashboard() {
   return (
     <div>
       <h1>Welcome to the Dashboard</h1>
+      {email && (
+        <p>Logged in as: {email}</p>
+      )}
       {userData ? (
         <div>
-          <p>Logged in as: {email}</p>
           <p>First Name: {userData.firstName}</p>
           <p>Last Name: {userData.lastName}</p>
         </div>
