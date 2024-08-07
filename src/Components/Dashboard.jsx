@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { query, where, getDocs, collection } from "firebase/firestore";
-import { db } from "../../src/config/firebase"; // Import Firestore instance
+import { db } from "../../src/config/firebase";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../../src/config/firebase";
+import Cookies from "js-cookie";
 
 export function Dashboard() {
   const location = useLocation();
@@ -9,11 +12,17 @@ export function Dashboard() {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const email = location.state?.email;
+  const email = location.state?.email?.toLowerCase().trim();
 
   useEffect(() => {
-    if (!email) {
-      navigate("/"); // Redirect to login if email is not available
+    // if (!email) {
+    //   navigate("/"); // Redirect to login if email is not available
+    //   return;
+    // }
+    const email = Cookies.get("email");
+    const authToken = Cookies.get("authToken");
+    if (!authToken) {
+      navigate("/");
       return;
     }
 
@@ -26,6 +35,7 @@ export function Dashboard() {
         if (!querySnapshot.empty) {
           // Assuming there's only one document with the email
           const docData = querySnapshot.docs[0].data();
+          console.log("User data found:", docData); // Debugging
           setUserData(docData);
         } else {
           setError("No user data found");
@@ -38,7 +48,17 @@ export function Dashboard() {
       }
     };
 
-    fetchUserData();
+    // Authentication check
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        navigate("/");
+      } else {
+        fetchUserData();
+      }
+    });
+
+    return () => unsubscribe(); // Cleanup on unmount
+
   }, [email, navigate]);
 
   if (loading) {
@@ -55,8 +75,8 @@ export function Dashboard() {
       {userData ? (
         <div>
           <p>Logged in as: {email}</p>
-          <p>First Name: {userData.firstname}</p>
-          <p>Last Name: {userData.lastname}</p>
+          <p>First Name: {userData.firstName}</p>
+          <p>Last Name: {userData.lastName}</p>
         </div>
       ) : (
         <p>No user data available</p>

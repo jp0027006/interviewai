@@ -1,36 +1,68 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Label } from "../Components/ui/label";
 import { Input } from "../Components/ui/input";
 import { cn } from "../../lib/utils";
 import { IconBrandGoogle } from "@tabler/icons-react";
 import { Link, useNavigate } from "react-router-dom";
-import validator from "validator";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
+  onAuthStateChanged,
+  signInWithCustomToken,
 } from "firebase/auth";
-import { auth } from "../../src/config/firebase";
+import { auth, db } from "../../src/config/firebase";
+import Cookies from "js-cookie";
 
 export function SigninFormDemo() {
+  const [customToken, setCustomToken] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [emailError, setEmailError] = useState("");
-  const [passwordError, setPasswordError] = useState("");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const authToken = Cookies.get("authToken");
+
+    if (authToken) {
+      // Attempt to sign in with the custom token
+      signInWithCustomToken(auth, authToken)
+        .then(() => {
+          navigate("/dashboard");
+        })
+    } else {
+      // Check if the user is already authenticated
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (user) {
+          navigate("/", {
+            state: {
+              email: user.email,
+              firstName: user.displayName?.split(" ")[0],
+              lastName: user.displayName?.split(" ")[1],
+            },
+          });
+        }
+      });
+
+      return () => unsubscribe(); // Clean up the subscription
+    }
+  }, [navigate]);
 
   const handleLogin = async (event) => {
     event.preventDefault();
-    if (emailError || passwordError) {
-      return; // Prevent submission if there are errors
-    }
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      navigate("/dashboard", { state: { email } });
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const user = userCredential.user;
+      Cookies.set("email", email, { expires: 1 });
+      Cookies.set("authToken", await user.getIdToken());
+      navigate("/dashboard");
     } catch (error) {
       showToastMessage();
       clearFormFields();
@@ -57,52 +89,30 @@ export function SigninFormDemo() {
   const handleGoogleLogin = async () => {
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
-      navigate("/dashboard");
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      const displayName = user.displayName;
+      const email = user.email;
+
+      // Split the displayName into first name and last name
+      const [firstName, lastName] = displayName.split(" ");
+
+      // Check if the user already exists in Firestore
+      const userDocRef = doc(db, "users", email);
+      const userDoc = await getDoc(userDocRef);
+
+      if (!userDoc.exists()) {
+        // User does not exist, create a new document
+        await setDoc(userDocRef, { firstName, lastName, email });
+      }
+
+      Cookies.set("authToken", await user.getIdToken());
+      Cookies.set("email", email, { expires: 1 });
+      navigate("/dashboard", { state: { email, firstName, lastName } });
     } catch (error) {
       showToastMessage();
       clearFormFields();
     }
-  };
-
-  const validateEmail = (email) => {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
-  };
-
-  const handleEmailChange = (e) => {
-    const newEmail = e.target.value;
-    setEmail(newEmail);
-    if (!validateEmail(newEmail)) {
-      setEmailError("Enter a valid email");
-    } else {
-      setEmailError("");
-    }
-  };
-
-  const validatePassword = (password) => {
-    const isStrong = validator.isStrongPassword(password, {
-      minLength: 8,
-      minLowercase: 1,
-      minUppercase: 1,
-      minNumbers: 1,
-      minSymbols: 1,
-    });
-
-    if (!isStrong) {
-      setPasswordError(
-        "Password must be at least 8 characters long and include at least one lowercase letter, one uppercase letter, one number, and one symbol"
-      );
-    } else {
-      setPasswordError("");
-    }
-    return isStrong;
-  };
-
-  const handlePasswordChange = (e) => {
-    const newPassword = e.target.value;
-    setPassword(newPassword);
-    validatePassword(newPassword);
   };
 
   return (
@@ -123,17 +133,11 @@ export function SigninFormDemo() {
               id="email"
               placeholder="Enter your email"
               type="email"
-              className={cn(
-                "bg-zinc-800 text-white border",
-                emailError
-                  ? "border-red-500 focus-visible:ring-[0px]"
-                  : "border-gray-500"
-              )}
+              className={cn("bg-zinc-800 text-white border border-gray-500")}
               autoComplete="off"
-              onChange={handleEmailChange}
+              onChange={(e) => setEmail(e.target.value)}
               value={email}
             />
-            {emailError && <p className="text-red-500">{emailError}</p>}
           </LabelInputContainer>
           <LabelInputContainer className="mb-4">
             <Label htmlFor="password" className="text-white">
@@ -143,17 +147,11 @@ export function SigninFormDemo() {
               id="password"
               placeholder="••••••••"
               type="password"
-              className={cn(
-                "bg-zinc-800 text-white border",
-                passwordError
-                  ? "border-red-500 focus-visible:ring-[0px]"
-                  : "border-gray-500"
-              )}
+              className={cn("bg-zinc-800 text-white border border-gray-500")}
               autoComplete="current-password"
-              onChange={handlePasswordChange}
+              onChange={(e) => setPassword(e.target.value)}
               value={password}
             />
-            {passwordError && <p className="text-red-500">{passwordError}</p>}
           </LabelInputContainer>
 
           <button
