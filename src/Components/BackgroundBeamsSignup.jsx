@@ -6,7 +6,7 @@ import { SignupFormDemo } from "./SignupFormDemo";
 
 export function BackgroundBeamsDemoSignup() {
   return (
-    <div className="relative w-full h-screen bg-black flex flex-col items-center justify-center antialiased">
+    <div className="relative w-full bg-black flex flex-col items-center justify-center antialiased">
       {/* Background */}
       <BackgroundBeams className="absolute inset-0 z-0" />
 

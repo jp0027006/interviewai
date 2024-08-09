@@ -5,6 +5,7 @@ import { db } from "../../src/config/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../src/config/firebase";
 import Cookies from "js-cookie";
+import Sidebar from "./ui/sidebar";
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -32,7 +33,10 @@ export function Dashboard() {
     const fetchUserData = async () => {
       try {
         // Create a query to find the document where the email field matches
-        const q = query(collection(db, "users"), where("email", "==", storedEmail.toLowerCase().trim()));
+        const q = query(
+          collection(db, "users"),
+          where("email", "==", storedEmail.toLowerCase().trim())
+        );
         const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
@@ -61,9 +65,7 @@ export function Dashboard() {
     });
 
     return () => unsubscribe(); // Cleanup on unmount
-
   }, [navigate]);
-
   if (loading) {
     return <p>Loading...</p>;
   }
@@ -73,19 +75,20 @@ export function Dashboard() {
   }
 
   return (
-    <div>
-      <h1>Welcome to the Dashboard</h1>
-      {email && (
-        <p>Logged in as: {email}</p>
-      )}
-      {userData ? (
-        <div>
-          <p>First Name: {userData.firstName}</p>
-          <p>Last Name: {userData.lastName}</p>
-        </div>
-      ) : (
-        <p>No user data available</p>
-      )}
+    <div className="flex">
+      <Sidebar />
+      <div>
+        <h1>Welcome to the Dashboard</h1>
+        {email && <p>Logged in as: {email}</p>}
+        {userData ? (
+          <div>
+            <p>First Name: {userData.firstName}</p>
+            <p>Last Name: {userData.lastName}</p>
+          </div>
+        ) : (
+          <p>No user data available</p>
+        )}
+      </div>
     </div>
   );
 }

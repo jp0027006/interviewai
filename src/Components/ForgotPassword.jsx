@@ -8,6 +8,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth, db } from "../../src/config/firebase";
 import { query, where, getDocs, collection } from "firebase/firestore";
+import logo from "../../src/assets/InterviewAI_png2.png";
 
 export function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -61,11 +62,12 @@ export function ForgotPassword() {
   return (
     <div className="relative max-w-md w-full mx-auto p-px bg-gradient-to-r from-[#03a9f4] to-[#f441a5] rounded-2xl">
       <div className="relative bg-black p-4 rounded-2xl">
+        <img src={logo} alt="logo" className="w-56 mx-auto mb-4" />
         <h2 className="font-bold text-xl text-white text-neutral-200 text-center">
           Forgot your password?
         </h2>
         <p className="text-md mt-2 -mb-2 bg-gradient-to-r font-black from-[#03a9f4] to-[#f441a5] bg-clip-text text-transparent text-center">
-          Don’t worry, it happens.
+          Don't worry, it happens.
         </p>
         <form className="my-8" onSubmit={handleSubmit} autoComplete="off">
           <LabelInputContainer className="mb-4">
@@ -76,20 +78,22 @@ export function ForgotPassword() {
               id="email"
               placeholder="Enter your email"
               type="email"
-              className="bg-zinc-800 text-white border border-gray-500"
+              className="bg-zinc-800 text-white"
               autoComplete="off"
               onChange={(e) => setEmail(e.target.value)}
               value={email}
             />
           </LabelInputContainer>
           <button
-            className="mt-7 border-gray-200 bg-gradient-to-br relative group/btn from-zinc-900 to-zinc-900 to-neutral-800 block bg-zinc-800 w-full text-white rounded-md h-10 font-medium shadow-[0px_1px_0px_0px_var(--zinc-800)_inset,0px_-1px_0px_0px_var(--zinc-800)_inset]"
+            className="mt-7 btn2 border-gray-200 bg-gradient-to-br relative group/btn from-zinc-900 to-zinc-900 to-neutral-800 block bg-zinc-800 w-full text-white rounded-md h-10 font-medium shadow-[0px_1px_0px_0px_var(--zinc-800)_inset,0px_-1px_0px_0px_var(--zinc-800)_inset]"
             type="submit"
           >
             Send Reset Email
+            <span class="gradient-span-1"></span>
+            <span class="gradient-span-2"></span>
           </button>
-          <p className="text-md -mb-5 mt-5 text-neutral-300 text-center">
-            <Link className="font-bold" to="/">
+          <p className="text-md -mb-5 mt-3 text-center">
+            <Link className="font-bold text-neutral-300 no-underline" to="/">
               Go Back
             </Link>
           </p>

@@ -4,6 +4,7 @@ import { BackgroundBeamsDemoSignin } from "./Components/BackgroundBeamsSignin";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Dashboard } from "./Components/Dashboard";
 import { BackgroundBeamsDemoForgot } from "./Components/BackgroundBeamsforgot";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 function App() {
   return (
