@@ -1,90 +1,145 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useContext } from "react";
 import {
   CDBSidebar,
   CDBSidebarContent,
   CDBSidebarHeader,
   CDBSidebarMenu,
-  CDBSidebarMenuItem,
   CDBSidebarFooter,
 } from "cdbreact";
 import avatar from "../../assets/boy.png";
 import logo from "../../assets/InterviewAI_png2.png";
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { LuLogOut } from "react-icons/lu";
+import { LuHistory } from "react-icons/lu";
+import { TiHome } from "react-icons/ti";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
 import Button from "react-bootstrap/Button";
+import Modal from "react-bootstrap/Modal";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap/dist/js/bootstrap.bundle.min.js";
+import { UserContext } from "../../context/UserContext.jsx";
 
-const Sidebar = () => {
+const Sidebar = ({ collapsed, setCollapsed, isMobile }) => {
+  const [showModal, setShowModal] = useState(false);
   const navigate = useNavigate();
-  const [collapsed, setCollapsed] = useState(false);
+  const { userData, logout } = useContext(UserContext);
 
-  // Handle collapse toggle
   const toggleCollapse = () => setCollapsed(!collapsed);
 
-  // Function to handle logout
   const handleLogout = () => {
     Cookies.remove("authToken");
     Cookies.remove("email");
+    logout();
     navigate("/");
-
-    // Close the modal programmatically
-    const modalElement = document.getElementById("exampleModal");
-    if (modalElement) {
-      const modal = new window.bootstrap.Modal(modalElement);
-      modal.hide();
-    }
+    setShowModal(false); // Close the modal
   };
 
-  // Cleanup modal backdrop on unmount
-  useEffect(() => {
-    return () => {
-      const backdrop = document.querySelector(".modal-backdrop");
-      if (backdrop) {
-        backdrop.remove();
-      }
-    };
-  }, []);
-
   return (
-    <div className="h-screen">
+    <div className="h-screen fixed transition-all duration-300">
       <CDBSidebar
-        className={`h-screen bg-black ${collapsed ? "collapsed" : ""}`}
+        className={`transition-all duration-500 ease-in-out h-screen bg-white ${
+          collapsed ? "collapsed" : ""
+        }`}
         style={{
-          borderTopRightRadius: "15px",
-          borderBottomRightRadius: "15px",
+          boxShadow: "rgba(0, 0, 0, 0.35) 0px 5px 15px",
+          borderTopRightRadius: "1rem",
+          borderBottomRightRadius: "1rem",
+          width: collapsed ? "80px" : "250px",
         }}
       >
-        {/* Sidebar Header */}
         <CDBSidebarHeader
           prefix={
             <i
               onClick={toggleCollapse}
-              className={`${collapsed ? "fas fa-bars" : "fas fa-times mt-2"}`}
+              className={`${
+                collapsed
+                  ? "fas fa-bars text-black"
+                  : "fas fa-times mt-2 text-black"
+              }`}
+              style={{ transition: "transform 0.3s ease-in-out" }} // Smooth transition for the toggle icon
             />
           }
         >
-          <img alt="Avatar" className="h-9 rounded-full" src={logo} />
+          <img
+            alt="Logo"
+            className="h-9 rounded-full"
+            src={logo}
+            style={{ transition: "opacity 0.3s ease-in-out" }} // Smooth transition for logo visibility
+          />
         </CDBSidebarHeader>
 
-        {/* Sidebar Content */}
         <CDBSidebarContent>
           <CDBSidebarMenu>
-            <CDBSidebarMenuItem icon="th-large">Dashboard</CDBSidebarMenuItem>
-            <CDBSidebarMenuItem icon="sticky-note">
-              Components
-            </CDBSidebarMenuItem>
-            <CDBSidebarMenuItem icon="credit-card" iconType="solid">
-              Metrics
-            </CDBSidebarMenuItem>
+            <div
+              className={`${
+                collapsed ? "px-3" : "px-4"
+              } mb-32 flex flex-col space-y-4`}
+            >
+              <NavLink
+                to="/dashboard"
+                className={({ isActive, isPending }) =>
+                  isPending
+                    ? "text-black no-underline ml-2"
+                    : isActive
+                    ? "text-white no-underline p-2 rounded-md active"
+                    : "text-black no-underline ml-2"
+                }
+              >
+                <span className="flex items-center transition-all duration-300">
+                  <span className="flex items-center justify-center">
+                    {!collapsed && ""}
+                    <TiHome className={collapsed ? "ms-1" : ""} size={"22px"} />
+                  </span>
+                  <span
+                    className={`${
+                      collapsed ? "d-none" : "ms-2 opacity-100"
+                    } transition-opacity duration-300`}
+                    style={{
+                      transition: "opacity 0.3s ease-in-out",
+                    }}
+                  >
+                    Dashboard
+                  </span>
+                </span>
+              </NavLink>
+
+              <NavLink
+                to="/history"
+                className={({ isActive, isPending }) =>
+                  isPending
+                    ? "text-black no-underline ml-2"
+                    : isActive
+                    ? "text-white no-underline p-2 rounded-md active"
+                    : "text-black no-underline ml-2"
+                }
+              >
+                <span className="flex items-center transition-all duration-300">
+                  <span className="flex items-center justify-center">
+                    {!collapsed && ""}
+                    <LuHistory className={collapsed ? "ms-1" : ""} size={"22px"} />
+                  </span>
+                  <span
+                    className={`${
+                      collapsed ? "d-none" : "ms-2 opacity-100"
+                    } transition-opacity duration-300`}
+                    style={{
+                      transition: "opacity 0.3s ease-in-out",
+                    }}
+                  >
+                    History
+                  </span>
+                </span>
+              </NavLink>
+            </div>
           </CDBSidebarMenu>
         </CDBSidebarContent>
 
-        {/* Profile Section */}
-        <div className={`${collapsed ? "hidden" : ""}`}>
+        <div
+          className={`${
+            collapsed ? "opacity-0" : "opacity-100"
+          } transition-all duration-500 ease-in-out`}
+        >
           <Link className="no-underline" to={"/profile"}>
             <div className="max-w-xs w-full px-4 -mb-6">
               <div
@@ -92,7 +147,7 @@ const Sidebar = () => {
                   backgroundImage:
                     "radial-gradient(88% 100% at top, hsla(0, 0%, 100%, .5), hsla(0, 0%, 100%, 0))",
                 }}
-                className="bg-indigo-800 overflow-hidden relative h-fit rounded-md max-w-sm mx-auto flex flex-col justify-between p-4"
+                className="bg-indigo-800 hover:bg-indigo-900 overflow-hidden relative h-fit rounded-md max-w-sm mx-auto flex flex-col justify-between p-4"
               >
                 <div className="absolute w-full h-full top-0 left-0 transition duration-300 group-hover/card:bg-black opacity-60"></div>
                 <div className="flex items-center space-x-4 z-10 justify-center">
@@ -101,15 +156,16 @@ const Sidebar = () => {
                     width="70"
                     alt="Avatar"
                     className="h-13 w-13 rounded-full"
-                    src={avatar}
+                    src={userData?.avatar || avatar}
+                    style={{ transition: "opacity 0.3s ease-in-out" }} // Smooth transition for avatar visibility
                   />
                 </div>
                 <div className="text content text-center">
                   <h1 className="font-bold text-xl md:text-2xl text-gray-50 relative z-10">
-                    Jay Patel
+                    {userData?.firstName || "User"} {userData?.lastName || ""}
                   </h1>
-                  <p className="font-normal text-sm text-gray-50 relative -mb-px z-10">
-                    jp0027006@gmail.com
+                  <p className="font-normal overflow-hidden text-sm text-gray-50 relative -mb-px z-10">
+                    {userData?.email || "Email not available"}
                   </p>
                 </div>
               </div>
@@ -117,7 +173,6 @@ const Sidebar = () => {
           </Link>
         </div>
 
-        {/* Profile Section for Collapsed Sidebar */}
         <div className={`${collapsed ? "" : "hidden"}`}>
           <Link className="no-underline h-fit" to={"/profile"}>
             <div className="max-w-xs w-full px-3">
@@ -127,14 +182,14 @@ const Sidebar = () => {
                   width="90"
                   alt="Avatar"
                   className="h-12 w-12 rounded-full"
-                  src={avatar}
+                  src={userData?.avatar || avatar}
+                  style={{ transition: "opacity 0.3s ease-in-out" }} // Smooth transition for avatar visibility
                 />
               </div>
             </div>
           </Link>
         </div>
 
-        {/* Sidebar Footer with Logout Button */}
         <CDBSidebarFooter style={{ textAlign: "center" }}>
           <div
             className={`${
@@ -150,8 +205,8 @@ const Sidebar = () => {
                 collapsed ? "icon" : "text-and-icon mt-7"
               }`}
               type="button"
-              data-bs-toggle="modal"
-              data-bs-target="#exampleModal"
+              onClick={() => setShowModal(true)}
+              style={{ transition: "opacity 0.3s ease-in-out" }} // Smooth transition for logout button visibility
             >
               <span className="flex items-center justify-center">
                 {!collapsed && "Logout"}
@@ -162,41 +217,31 @@ const Sidebar = () => {
         </CDBSidebarFooter>
       </CDBSidebar>
 
-      {/* Logout Confirmation Modal */}
-      <div
-        className="modal fade"
-        id="exampleModal"
-        tabIndex="-1"
-        aria-labelledby="exampleModalLabel"
-        aria-hidden="true"
-      >
-        <div className="modal-dialog modal-dialog-centered">
-          <div className="modal-content" style={{borderRadius:"7rem"}}>
-            <div className="modal-body bg-black flex flex-column items-center justify-center text-white rounded-2xl">
-              <i
-                className="text-red-500 mb-3 fa fa-exclamation-triangle"
-                aria-hidden="true"
-                style={{ fontSize: "2rem" }}
-              ></i>
-              <h4>Are you sure you want to log out?</h4>
-              <p className="text-natural-600 mt-1 mb-3 opacity-75">
-                Logging out will return you to the login screen.
-              </p>
-              <div className="flex">
-                <button
-                  className="mr-4 btn btn-secondary"
-                  data-bs-dismiss="modal"
-                >
-                  Cancel
-                </button>
-                <Button variant="danger" onClick={handleLogout}>
-                  Logout
-                </Button>
-              </div>
-            </div>
+      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
+        <Modal.Body className="bg-white flex flex-column items-center justify-center rounded-md">
+          <i
+            className="text-red-500 mb-3 fa fa-exclamation-triangle"
+            aria-hidden="true"
+            style={{ fontSize: "2rem" }}
+          ></i>
+          <h4>Are you sure you want to log out?</h4>
+          <p className="text-gray-600 mt-1 mb-3">
+            Logging out will return you to the login screen.
+          </p>
+          <div className="flex">
+            <Button
+              variant="outline-dark"
+              onClick={() => setShowModal(false)}
+              className="mr-4"
+            >
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={handleLogout}>
+              Logout
+            </Button>
           </div>
-        </div>
-      </div>
+        </Modal.Body>
+      </Modal>
     </div>
   );
 };

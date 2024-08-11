@@ -1,21 +1,27 @@
+// src/App.js
 import React from "react";
-import { BackgroundBeamsDemoSignup } from "./Components/BackgroundBeamsSignup";
-import { BackgroundBeamsDemoSignin } from "./Components/BackgroundBeamsSignin";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Dashboard } from "./Components/Dashboard";
-import { BackgroundBeamsDemoForgot } from "./Components/BackgroundBeamsforgot";
+import { Profile } from "./Components/Profile";
+import { BackgroundGradientAnimationForgot } from "./Components/BackgroundGradientAnimationForgot";
+import { BackgroundGradientAnimationSignin } from "./Components/BackgroundGradientAnimationSignin";
+import { BackgroundGradientAnimationSignup } from "./Components/BackgroundGradientAnimationSignup";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { UserProvider } from './context/UserContext';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<BackgroundBeamsDemoSignin />} />
-        <Route path="/signup" element={<BackgroundBeamsDemoSignup />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/forgotpassword" element={<BackgroundBeamsDemoForgot />} />
-      </Routes>
-    </Router>
+    <UserProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<BackgroundGradientAnimationSignin />} />
+          <Route path="/signup" element={<BackgroundGradientAnimationSignup />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/forgotpassword" element={<BackgroundGradientAnimationForgot />} />
+          <Route path="/profile" element={<Profile />} />
+        </Routes>
+      </Router>
+    </UserProvider>
   );
 }
 
