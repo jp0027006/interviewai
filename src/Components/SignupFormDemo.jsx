@@ -7,9 +7,7 @@ import { Link, useNavigate } from "react-router-dom";
 import validator from "validator";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Cookies from "js-cookie"; // Import js-cookie"use client";
-
-// Import Firebase methods
+import Cookies from "js-cookie";
 import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
@@ -38,8 +36,7 @@ export function SignupFormDemo() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    // Validation
-    const customEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/; // Basic email format
+    const customEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!customEmailRegex.test(email)) {
       showerrorToastMessage("Invalid email address format.");
       return;

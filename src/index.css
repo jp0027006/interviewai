@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 /* In your styles.css or relevant stylesheet */
+body{
+  background-color: #eaf0fe;
+}
 .background-beams {
   position: absolute;
   top: 0;

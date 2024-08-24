@@ -14,7 +14,7 @@ import {
   onAuthStateChanged,
   EmailAuthProvider,
   reauthenticateWithCredential,
-  getAuth, 
+  getAuth,
   updatePassword,
 } from "firebase/auth";
 import { auth } from "../../src/config/firebase";
@@ -238,6 +238,11 @@ export function Profile() {
     setFirstName(userData?.firstName || "");
     setLastName(userData?.lastName || "");
   };
+  const handlePasswordReset = () => {
+    setPassword("");
+    setConfirmPassword("");
+    setOldPassword("");
+  };
 
   const handleFirstNameChange = (e) => {
     setFirstName(e.target.value);
@@ -248,33 +253,42 @@ export function Profile() {
   };
 
   const validatePassword = (password) => {
-    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+    const passwordRegex =
+      /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
     return passwordRegex.test(password);
   };
 
   const handleChangePassword = async (currentPassword, newPassword) => {
     const auth = getAuth();
     const user = auth.currentUser;
-  
+
     if (!user) {
       showerrorToastMessage("No user is currently signed in.");
       return;
     }
-  
-    try {
-      // Re-authenticate the user
-      const credential = EmailAuthProvider.credential(user.email, currentPassword);
-      await reauthenticateWithCredential(user, credential);
-  
-      // Update the password
-      await updatePassword(user, newPassword);
-      showsuccessToastMessage("Password Changed successfully");
-    } catch (error) {
-      showerrorToastMessage("Current Password Is Invalid");
+    if (
+      user.providerData.some((profile) => profile.providerId === "google.com")
+    ) {
+      showwarningToastMessage(
+        "Since you signed up using Google, you can change your password in your Google account settings."
+      );
+      handlePasswordReset();
+    } else {
+
+      try {
+        const credential = EmailAuthProvider.credential(
+          user.email,
+          currentPassword
+        );
+        await reauthenticateWithCredential(user, credential);
+        await updatePassword(user, newPassword);
+        showsuccessToastMessage("Password Changed successfully");
+        handlePasswordReset();
+      } catch (error) {
+        showerrorToastMessage("Current Password Is Invalid");
+      }
     }
   };
-  
-
   const showsuccessToastMessage = (message) => {
     toast.success(message, {
       position: "top-right",
@@ -289,6 +303,17 @@ export function Profile() {
 
   const showerrorToastMessage = (message) => {
     toast.error(message, {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      theme: "light",
+    });
+  };
+  const showwarningToastMessage = (message) => {
+    toast.warn(message, {
       position: "top-right",
       autoClose: 5000,
       hideProgressBar: false,
@@ -422,7 +447,7 @@ export function Profile() {
               </div>
               <div
                 className={`${
-                  isMobile ? "gap-0" : "gap-4 mb-8"
+                  isMobile ? "gap-0" : "gap-4 mb-8 -mt-1"
                 } grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2`}
               >
                 <div
@@ -441,7 +466,9 @@ export function Profile() {
                     onSubmit={(e) => {
                       e.preventDefault();
                       if (!validatePassword(password)) {
-                        showerrorToastMessage("Password must be at least 8 characters long, include at least 1 uppercase letter, 1 number, 1 special character.");
+                        showerrorToastMessage(
+                          "Password must be at least 8 characters long, include at least 1 uppercase letter, 1 number, 1 special character."
+                        );
                         return;
                       }
 
@@ -549,7 +576,7 @@ export function Profile() {
                           isMobile ? "w-full" : "w-24"
                         } hover:bg-gray-300 bg-gray-200 relative group/btn block rounded-md h-10 font-medium shadow-md`}
                         type="button" // Change type to "button"
-                        onClick={handleReset}
+                        onClick={handlePasswordReset}
                       >
                         Cancel
                       </button>

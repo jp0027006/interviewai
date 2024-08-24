@@ -6,6 +6,7 @@ import { Profile } from "./Components/Profile";
 import { BackgroundGradientAnimationForgot } from "./Components/BackgroundGradientAnimationForgot";
 import { BackgroundGradientAnimationSignin } from "./Components/BackgroundGradientAnimationSignin";
 import { BackgroundGradientAnimationSignup } from "./Components/BackgroundGradientAnimationSignup";
+import ScrollToTop from './Components/ui/ScrollToTop';
 import "bootstrap/dist/css/bootstrap.min.css";
 import { UserProvider } from './context/UserContext';
 
@@ -13,6 +14,7 @@ function App() {
   return (
     <UserProvider>
       <Router>
+      <ScrollToTop />
         <Routes>
           <Route path="/" element={<BackgroundGradientAnimationSignin />} />
           <Route path="/signup" element={<BackgroundGradientAnimationSignup />} />
