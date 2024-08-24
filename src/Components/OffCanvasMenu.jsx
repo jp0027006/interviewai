@@ -1,4 +1,3 @@
-// src/components/OffCanvasMenu.jsx
 import React, { useContext, useState } from "react";
 import { Offcanvas, Button, Modal } from "react-bootstrap";
 import { Link, NavLink } from "react-router-dom";
@@ -12,7 +11,6 @@ import { useNavigate } from "react-router-dom";
 
 const OffCanvasMenu = ({ show, onHide }) => {
   const navigate = useNavigate();
-
   const { userData, logout } = useContext(UserContext);
   const [showModal, setShowModal] = useState(false);
 
@@ -35,9 +33,11 @@ const OffCanvasMenu = ({ show, onHide }) => {
           borderTopRightRadius: "15px",
           borderBottomRightRadius: "15px",
           boxShadow: "rgba(0, 0, 0, 0.35) 0px 5px 15px",
+          display: "flex",
+          flexDirection: "column", // Use column layout
         }}
       >
-        <Offcanvas.Body>
+        <Offcanvas.Body className="d-flex flex-column flex-grow-1">
           <div>
             <NavLink className="no-underline" to={"/profile"}>
               <div className="w-full -mb-6">
@@ -69,7 +69,7 @@ const OffCanvasMenu = ({ show, onHide }) => {
               </div>
             </NavLink>
           </div>
-          <div className="mt-5 mb-32 flex flex-col space-y-5">
+          <div className="mt-5 flex flex-col space-y-5">
             <NavLink
               to="/dashboard"
               className={({ isActive, isPending }) =>
@@ -119,17 +119,19 @@ const OffCanvasMenu = ({ show, onHide }) => {
               </span>
             </NavLink>
           </div>
-          <Button
-            variant="danger"
-            className="mt-64 bg-red-600 flex items-center justify-center relative group/btn block w-full text-white rounded-md h-10 font-medium text-and-icon"
-            type="button"
-            onClick={() => setShowModal(true)}
-          >
-            <span className="flex items-center justify-center">
-              Logout
-              <LuLogOut className="ms-2" />
-            </span>
-          </Button>
+          <div className="mt-auto mb-3">
+            <Button
+              variant="danger"
+              className="bg-red-600 flex items-center justify-center relative group/btn block w-full text-white rounded-md h-11 font-medium text-and-icon"
+              type="button"
+              onClick={() => setShowModal(true)}
+            >
+              <span className="flex items-center justify-center">
+                Logout
+                <LuLogOut className="ms-2" />
+              </span>
+            </Button>
+          </div>
         </Offcanvas.Body>
       </Offcanvas>
 

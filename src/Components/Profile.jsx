@@ -1,22 +1,71 @@
-// src/pages/Dashboard.jsx
-import React, { useEffect, useContext, useState } from "react";
+import React, { useEffect, useContext, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { query, where, getDocs, collection } from "firebase/firestore";
+import {
+  query,
+  where,
+  getDocs,
+  collection,
+  doc,
+  updateDoc,
+  deleteDoc,
+} from "firebase/firestore";
 import { db } from "../../src/config/firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import {
+  onAuthStateChanged,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  getAuth, 
+  updatePassword,
+} from "firebase/auth";
 import { auth } from "../../src/config/firebase";
 import Cookies from "js-cookie";
 import Sidebar from "./ui/sidebar";
 import MobileNavbar from "./MobileNavbar";
 import { UserContext } from "../context/UserContext";
+import avatar from "../assets/boy.png";
+import { BackgroundGradientAnimation } from "../Components/ui/background-gradient-animation3";
+import { Label } from "../Components/ui/label";
+import { Input } from "../Components/ui/input";
+import { cn } from "../../lib/utils";
+import Button from "react-bootstrap/Button";
+import Modal from "react-bootstrap/Modal";
+import { Eye, EyeOff } from "react-feather";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export function Profile() {
+  const [showModal, setShowModal] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [oldpassword, setOldPassword] = useState("");
   const navigate = useNavigate();
   const { userData, login, logout } = useContext(UserContext);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 750);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
+
+  const toggleOldPasswordVisibility = () => {
+    setShowOldPassword(!showOldPassword);
+  };
+
+  // Use a ref to track if initial form state is set
+  const isInitialLoad = useRef(true);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 750);
@@ -51,6 +100,14 @@ export function Profile() {
         if (!querySnapshot.empty) {
           const docData = querySnapshot.docs[0].data();
           login(docData);
+
+          // Initialize form state only on initial load
+          if (isInitialLoad.current) {
+            setFirstName(docData.firstName || "");
+            setLastName(docData.lastName || "");
+            setEmail(docData.email || "");
+            isInitialLoad.current = false;
+          }
         } else {
           setError("No user data found");
         }
@@ -77,13 +134,170 @@ export function Profile() {
     navigate("/");
   };
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
 
-  if (error) {
-    return <div>Error: {error}</div>;
-  }
+    const errors = [];
+    const validations = [
+      { condition: !firstName, message: "First name cannot be empty." },
+      { condition: !lastName, message: "Last name cannot be empty." },
+      {
+        condition: !/^[a-zA-Z]+$/.test(firstName),
+        message: "First name must contain only alphabets.",
+      },
+      {
+        condition: !/^[a-zA-Z]+$/.test(lastName),
+        message: "Last name must contain only alphabets.",
+      },
+    ];
+
+    validations.forEach(({ condition, message }) => {
+      if (condition) errors.push(message);
+    });
+
+    if (errors.length) {
+      showerrorToastMessage(errors.join(" "));
+      return;
+    }
+
+    const storedEmail = Cookies.get("email");
+
+    try {
+      const q = query(
+        collection(db, "users"),
+        where("email", "==", storedEmail.toLowerCase().trim())
+      );
+
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const docId = querySnapshot.docs[0].id;
+        const docRef = doc(db, "users", docId);
+
+        await updateDoc(docRef, {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+        });
+
+        login({
+          ...userData,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+        });
+        showsuccessToastMessage("Profile updated successfully");
+      } else {
+        setError("User not found");
+      }
+    } catch (error) {
+      showerrorToastMessage("Failed to update profile. Please try again.");
+    }
+  };
+
+  const handleDeactivateAccount = async (e) => {
+    e.preventDefault();
+
+    setError(""); // Reset error before deletion
+
+    const storedEmail = Cookies.get("email");
+
+    try {
+      const q = query(
+        collection(db, "users"),
+        where("email", "==", storedEmail.toLowerCase().trim())
+      );
+
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const docId = querySnapshot.docs[0].id;
+        const docRef = doc(db, "users", docId);
+
+        await deleteDoc(docRef); // Deletes user data from Firestore
+
+        // Optionally delete the user from Firebase Authentication
+        const user = auth.currentUser;
+        if (user) {
+          await user.delete(); // Deletes the user from Firebase Authentication
+        }
+
+        // Clear cookies and log out
+        Cookies.remove("authToken");
+        Cookies.remove("email");
+        logout();
+        navigate("/");
+      } else {
+        setError("User not found");
+      }
+    } catch (error) {
+      showerrorToastMessage("Failed to delete account. Please try again.");
+    }
+  };
+
+  const handleReset = () => {
+    setFirstName(userData?.firstName || "");
+    setLastName(userData?.lastName || "");
+  };
+
+  const handleFirstNameChange = (e) => {
+    setFirstName(e.target.value);
+  };
+
+  const handleLastNameChange = (e) => {
+    setLastName(e.target.value);
+  };
+
+  const validatePassword = (password) => {
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+    return passwordRegex.test(password);
+  };
+
+  const handleChangePassword = async (currentPassword, newPassword) => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+  
+    if (!user) {
+      showerrorToastMessage("No user is currently signed in.");
+      return;
+    }
+  
+    try {
+      // Re-authenticate the user
+      const credential = EmailAuthProvider.credential(user.email, currentPassword);
+      await reauthenticateWithCredential(user, credential);
+  
+      // Update the password
+      await updatePassword(user, newPassword);
+      showsuccessToastMessage("Password Changed successfully");
+    } catch (error) {
+      showerrorToastMessage("Current Password Is Invalid");
+    }
+  };
+  
+
+  const showsuccessToastMessage = (message) => {
+    toast.success(message, {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      theme: "light",
+    });
+  };
+
+  const showerrorToastMessage = (message) => {
+    toast.error(message, {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      theme: "light",
+    });
+  };
 
   return (
     <div className="relative flex overflow-hidden">
@@ -103,394 +317,360 @@ export function Profile() {
             : "calc(100% - 250px)",
         }}
       >
-        <div className="p-4">
+        <div className={`${isMobile ? "p-4" : "px-16 mt-5"}`}>
           {userData ? (
             <div>
-              {/* <p>First Name: {userData.firstName}</p>
-              <p>Last Name: {userData.lastName}</p>
-              <p>Email: {userData.email}</p> */}
-              <div className="card2">
+              <div className="card2 shadow-md">
                 <div className="card2__img">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="100%">
-                    <rect fill="#ffffff" width={540} height={450} />
-                    <defs>
-                      <linearGradient
-                        id="a"
-                        gradientUnits="userSpaceOnUse"
-                        x1={0}
-                        x2={0}
-                        y1={0}
-                        y2="100%"
-                        gradientTransform="rotate(222,648,379)"
-                      >
-                        <stop offset={0} stopColor="#ffffff" />
-                        <stop offset={1} stopColor="#FC726E" />
-                      </linearGradient>
-                      <pattern
-                        patternUnits="userSpaceOnUse"
-                        id="b"
-                        width={300}
-                        height={250}
-                        x={0}
-                        y={0}
-                        viewBox="0 0 1080 900"
-                      >
-                        <g fillOpacity="0.5">
-                          <polygon fill="#444" points="90 150 0 300 180 300" />
-                          <polygon points="90 150 180 0 0 0" />
-                          <polygon fill="#AAA" points="270 150 360 0 180 0" />
-                          <polygon
-                            fill="#DDD"
-                            points="450 150 360 300 540 300"
-                          />
-                          <polygon fill="#999" points="450 150 540 0 360 0" />
-                          <polygon points="630 150 540 300 720 300" />
-                          <polygon fill="#DDD" points="630 150 720 0 540 0" />
-                          <polygon
-                            fill="#444"
-                            points="810 150 720 300 900 300"
-                          />
-                          <polygon fill="#FFF" points="810 150 900 0 720 0" />
-                          <polygon
-                            fill="#DDD"
-                            points="990 150 900 300 1080 300"
-                          />
-                          <polygon fill="#444" points="990 150 1080 0 900 0" />
-                          <polygon fill="#DDD" points="90 450 0 600 180 600" />
-                          <polygon points="90 450 180 300 0 300" />
-                          <polygon
-                            fill="#666"
-                            points="270 450 180 600 360 600"
-                          />
-                          <polygon
-                            fill="#AAA"
-                            points="270 450 360 300 180 300"
-                          />
-                          <polygon
-                            fill="#DDD"
-                            points="450 450 360 600 540 600"
-                          />
-                          <polygon
-                            fill="#999"
-                            points="450 450 540 300 360 300"
-                          />
-                          <polygon
-                            fill="#999"
-                            points="630 450 540 600 720 600"
-                          />
-                          <polygon
-                            fill="#FFF"
-                            points="630 450 720 300 540 300"
-                          />
-                          <polygon points="810 450 720 600 900 600" />
-                          <polygon
-                            fill="#DDD"
-                            points="810 450 900 300 720 300"
-                          />
-                          <polygon
-                            fill="#AAA"
-                            points="990 450 900 600 1080 600"
-                          />
-                          <polygon
-                            fill="#444"
-                            points="990 450 1080 300 900 300"
-                          />
-                          <polygon fill="#222" points="90 750 0 900 180 900" />
-                          <polygon points="270 750 180 900 360 900" />
-                          <polygon
-                            fill="#DDD"
-                            points="270 750 360 600 180 600"
-                          />
-                          <polygon points="450 750 540 600 360 600" />
-                          <polygon points="630 750 540 900 720 900" />
-                          <polygon
-                            fill="#444"
-                            points="630 750 720 600 540 600"
-                          />
-                          <polygon
-                            fill="#AAA"
-                            points="810 750 720 900 900 900"
-                          />
-                          <polygon
-                            fill="#666"
-                            points="810 750 900 600 720 600"
-                          />
-                          <polygon
-                            fill="#999"
-                            points="990 750 900 900 1080 900"
-                          />
-                          <polygon fill="#999" points="180 0 90 150 270 150" />
-                          <polygon fill="#444" points="360 0 270 150 450 150" />
-                          <polygon fill="#FFF" points="540 0 450 150 630 150" />
-                          <polygon points="900 0 810 150 990 150" />
-                          <polygon fill="#222" points="0 300 -90 450 90 450" />
-                          <polygon fill="#FFF" points="0 300 90 150 -90 150" />
-                          <polygon
-                            fill="#FFF"
-                            points="180 300 90 450 270 450"
-                          />
-                          <polygon
-                            fill="#666"
-                            points="180 300 270 150 90 150"
-                          />
-                          <polygon
-                            fill="#222"
-                            points="360 300 270 450 450 450"
-                          />
-                          <polygon
-                            fill="#FFF"
-                            points="360 300 450 150 270 150"
-                          />
-                          <polygon
-                            fill="#444"
-                            points="540 300 450 450 630 450"
-                          />
-                          <polygon
-                            fill="#222"
-                            points="540 300 630 150 450 150"
-                          />
-                          <polygon
-                            fill="#AAA"
-                            points="720 300 630 450 810 450"
-                          />
-                          <polygon
-                            fill="#666"
-                            points="720 300 810 150 630 150"
-                          />
-                          <polygon
-                            fill="#FFF"
-                            points="900 300 810 450 990 450"
-                          />
-                          <polygon
-                            fill="#999"
-                            points="900 300 990 150 810 150"
-                          />
-                          <polygon points="0 600 -90 750 90 750" />
-                          <polygon fill="#666" points="0 600 90 450 -90 450" />
-                          <polygon
-                            fill="#AAA"
-                            points="180 600 90 750 270 750"
-                          />
-                          <polygon
-                            fill="#444"
-                            points="180 600 270 450 90 450"
-                          />
-                          <polygon
-                            fill="#444"
-                            points="360 600 270 750 450 750"
-                          />
-                          <polygon
-                            fill="#999"
-                            points="360 600 450 450 270 450"
-                          />
-                          <polygon
-                            fill="#666"
-                            points="540 600 630 450 450 450"
-                          />
-                          <polygon
-                            fill="#222"
-                            points="720 600 630 750 810 750"
-                          />
-                          <polygon
-                            fill="#FFF"
-                            points="900 600 810 750 990 750"
-                          />
-                          <polygon
-                            fill="#222"
-                            points="900 600 990 450 810 450"
-                          />
-                          <polygon fill="#DDD" points="0 900 90 750 -90 750" />
-                          <polygon
-                            fill="#444"
-                            points="180 900 270 750 90 750"
-                          />
-                          <polygon
-                            fill="#FFF"
-                            points="360 900 450 750 270 750"
-                          />
-                          <polygon
-                            fill="#AAA"
-                            points="540 900 630 750 450 750"
-                          />
-                          <polygon
-                            fill="#FFF"
-                            points="720 900 810 750 630 750"
-                          />
-                          <polygon
-                            fill="#222"
-                            points="900 900 990 750 810 750"
-                          />
-                          <polygon
-                            fill="#222"
-                            points="1080 300 990 450 1170 450"
-                          />
-                          <polygon
-                            fill="#FFF"
-                            points="1080 300 1170 150 990 150"
-                          />
-                          <polygon points="1080 600 990 750 1170 750" />
-                          <polygon
-                            fill="#666"
-                            points="1080 600 1170 450 990 450"
-                          />
-                          <polygon
-                            fill="#DDD"
-                            points="1080 900 1170 750 990 750"
-                          />
-                        </g>
-                      </pattern>
-                    </defs>
-                    <rect
-                      x={0}
-                      y={0}
-                      fill="url(#a)"
-                      width="100%"
-                      height="100%"
-                    />
-                    <rect
-                      x={0}
-                      y={0}
-                      fill="url(#b)"
-                      width="100%"
-                      height="100%"
-                    />
-                  </svg>
+                  <div className="h-full">
+                    <div
+                      className="w-full relative"
+                      style={{ height: "inherit" }}
+                    >
+                      <BackgroundGradientAnimation />
+                    </div>
+                  </div>
                 </div>
                 <div className="card2__avatar">
-                  <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx={64} cy={64} fill="#ff8475" r={60} />
-                    <circle
-                      cx={64}
-                      cy={64}
-                      fill="#f85565"
-                      opacity=".4"
-                      r={48}
-                    />
-                    <path
-                      d="m64 14a32 32 0 0 1 32 32v41a6 6 0 0 1 -6 6h-52a6 6 0 0 1 -6-6v-41a32 32 0 0 1 32-32z"
-                      fill="#7f3838"
-                    />
-                    <path
-                      d="m62.73 22h2.54a23.73 23.73 0 0 1 23.73 23.73v42.82a4.45 4.45 0 0 1 -4.45 4.45h-41.1a4.45 4.45 0 0 1 -4.45-4.45v-42.82a23.73 23.73 0 0 1 23.73-23.73z"
-                      fill="#393c54"
-                      opacity=".4"
-                    />
-                    <circle cx={89} cy={65} fill="#fbc0aa" r={7} />
-                    <path
-                      d="m64 124a59.67 59.67 0 0 0 34.69-11.06l-3.32-9.3a10 10 0 0 0 -9.37-6.64h-43.95a10 10 0 0 0 -9.42 6.64l-3.32 9.3a59.67 59.67 0 0 0 34.69 11.06z"
-                      fill="#4bc190"
-                    />
-                    <path
-                      d="m45 110 5.55 2.92-2.55 8.92a60.14 60.14 0 0 0 9 1.74v-27.08l-12.38 10.25a2 2 0 0 0 .38 3.25z"
-                      fill="#356cb6"
-                      opacity=".3"
-                    />
-                    <path
-                      d="m71 96.5v27.09a60.14 60.14 0 0 0 9-1.74l-2.54-8.93 5.54-2.92a2 2 0 0 0 .41-3.25z"
-                      fill="#356cb6"
-                      opacity=".3"
-                    />
-                    <path
-                      d="m57 123.68a58.54 58.54 0 0 0 14 0v-25.68h-14z"
-                      fill="#fff"
-                    />
-                    <path
-                      d="m64 88.75v9.75"
-                      fill="none"
-                      stroke="#fbc0aa"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={14}
-                    />
-                    <circle cx={39} cy={65} fill="#fbc0aa" r={7} />
-                    <path
-                      d="m64 91a25 25 0 0 1 -25-25v-16.48a25 25 0 1 1 50 0v16.48a25 25 0 0 1 -25 25z"
-                      fill="#ffd8c9"
-                    />
-                    <path
-                      d="m91.49 51.12v-4.72c0-14.95-11.71-27.61-26.66-28a27.51 27.51 0 0 0 -28.32 27.42v5.33a2 2 0 0 0 2 2h6.81a8 8 0 0 0 6.5-3.33l4.94-6.88a18.45 18.45 0 0 1 1.37 1.63 22.84 22.84 0 0 0 17.87 8.58h13.45a2 2 0 0 0 2.04-2.03z"
-                      fill="#bc5b57"
-                    />
-                    <path
-                      d="m62.76 36.94c4.24 8.74 10.71 10.21 16.09 10.21h5"
-                      style={{
-                        fill: "none",
-                        strokeLinecap: "round",
-                        stroke: "#fff",
-                        strokeMiterlimit: 10,
-                        strokeWidth: 2,
-                        opacity: ".1",
-                      }}
-                    />
-                    <path
-                      d="m71 35c2.52 5.22 6.39 6.09 9.6 6.09h3"
-                      style={{
-                        fill: "none",
-                        strokeLinecap: "round",
-                        stroke: "#fff",
-                        strokeMiterlimit: 10,
-                        strokeWidth: 2,
-                        opacity: ".1",
-                      }}
-                    />
-                    <circle cx={76} cy="62.28" fill="#515570" r={3} />
-                    <circle cx={52} cy="62.28" fill="#515570" r={3} />
-                    <ellipse
-                      cx="50.42"
-                      cy="69.67"
-                      fill="#f85565"
-                      opacity=".1"
-                      rx="4.58"
-                      ry="2.98"
-                    />
-                    <ellipse
-                      cx="77.58"
-                      cy="69.67"
-                      fill="#f85565"
-                      opacity=".1"
-                      rx="4.58"
-                      ry="2.98"
-                    />
-                    <g fill="none" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="m64 67v4" stroke="#fbc0aa" strokeWidth={4} />
-                      <path
-                        d="m55 56h-9.25"
-                        opacity=".2"
-                        stroke="#515570"
-                        strokeWidth={2}
-                      />
-                      <path
-                        d="m82 56h-9.25"
-                        opacity=".2"
-                        stroke="#515570"
-                        strokeWidth={2}
-                      />
-                    </g>
-                    <path
-                      d="m64 84c5 0 7-3 7-3h-14s2 3 7 3z"
-                      fill="#f85565"
-                      opacity=".4"
-                    />
-                    <path
-                      d="m65.07 78.93-.55.55a.73.73 0 0 1 -1 0l-.55-.55c-1.14-1.14-2.93-.93-4.27.47l-1.7 1.6h14l-1.66-1.6c-1.34-1.4-3.13-1.61-4.27-.47z"
-                      fill="#f85565"
-                    />
-                  </svg>
+                  <img
+                    height="100"
+                    width="100"
+                    alt="Avatar"
+                    className="h-13 w-13 rounded-full"
+                    src={userData?.avatar || avatar}
+                    style={{ transition: "opacity 0.3s ease-in-out" }}
+                  />
                 </div>
-                <div className="card2__title">Cameron Williamson</div>
-                <div className="card2__subtitle">Web Development</div>
-                <div className="card2__wrapper">
-                  <button className="card2__btn">Button</button>
-                  <button className="card2__btn card2__btn-solid">Button</button>
+                <div className="card2__title">
+                  {userData.firstName} {userData.lastName}
+                </div>
+                <div className="card2__subtitle">{userData.email}</div>
+                <div className="card2__wrapper"></div>
+              </div>
+
+              <div
+                className={`${
+                  isMobile ? "px-6" : "px-12"
+                } card3 py-1 mt-6 mb-8`}
+                style={{ height: "fit-content" }}
+              >
+                <h2
+                  className="font-bold text-xl mt-4 text-neutral-800"
+                  style={{ textAlign: "left" }}
+                >
+                  Personal Information
+                </h2>
+                <form
+                  className="my-8"
+                  autoComplete="off"
+                  onSubmit={handleSubmit}
+                >
+                  <div
+                    className={`${
+                      isMobile ? "gap-0" : "gap-4"
+                    } grid grid-cols-1 mb-1 md:grid-cols-2 lg:grid-cols-2`}
+                  >
+                    <LabelInputContainer className="mb-4">
+                      <Label htmlFor="firstName">First Name</Label>
+                      <Input
+                        id="firstName"
+                        placeholder="First Name"
+                        type="text"
+                        autoComplete="off"
+                        onChange={handleFirstNameChange}
+                        value={firstName}
+                      />
+                    </LabelInputContainer>
+                    <LabelInputContainer className="mb-4">
+                      <Label htmlFor="lastName">Last Name</Label>
+                      <Input
+                        id="lastName"
+                        placeholder="Last Name"
+                        type="text"
+                        autoComplete="off"
+                        onChange={handleLastNameChange}
+                        value={lastName}
+                      />
+                    </LabelInputContainer>
+                  </div>
+                  <div
+                    className={`${
+                      isMobile
+                        ? "gap-2 items-center justify-center items-center"
+                        : "gap-3"
+                    } flex`}
+                  >
+                    <button
+                      className={`${
+                        isMobile ? "w-full" : "w-24"
+                      } hover:bg-gray-300 bg-gray-200 relative group/btn block rounded-md h-10 font-medium shadow-md`}
+                      type="button" // Change type to "button"
+                      onClick={handleReset}
+                    >
+                      Reset
+                    </button>
+                    <button
+                      className={`${
+                        isMobile ? "w-full" : "w-40"
+                      } hover:bg-indigo-800 bg-indigo-700 relative group/btn block text-white rounded-md h-10 font-medium shadow-md`}
+                      type="submit"
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                </form>
+              </div>
+              <div
+                className={`${
+                  isMobile ? "gap-0" : "gap-4 mb-8"
+                } grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2`}
+              >
+                <div
+                  className={`${isMobile ? "px-6" : "px-12"} card3 py-1`}
+                  style={{ height: "fit-content" }}
+                >
+                  <h2
+                    className="font-bold text-xl mt-4 text-neutral-800"
+                    style={{ textAlign: "left" }}
+                  >
+                    Change Password
+                  </h2>
+                  <form
+                    className="my-8"
+                    autoComplete="off"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!validatePassword(password)) {
+                        showerrorToastMessage("Password must be at least 8 characters long, include at least 1 uppercase letter, 1 number, 1 special character.");
+                        return;
+                      }
+
+                      if (password === confirmPassword) {
+                        handleChangePassword(oldpassword, password);
+                      } else {
+                        showerrorToastMessage("New passwords do not match.");
+                      }
+                    }}
+                  >
+                    <div
+                      className={`${
+                        isMobile ? "" : ""
+                      } grid grid-cols-1 mb-1 md:grid-cols-1 lg:grid-cols-1`}
+                    >
+                      <LabelInputContainer className="mb-4">
+                        <Label htmlFor="oldPassword">Current Password</Label>
+                        <div className="relative">
+                          <Input
+                            id="oldPassword"
+                            placeholder="••••••••"
+                            type={showOldPassword ? "text" : "password"}
+                            autoComplete="current-password"
+                            onChange={(e) => setOldPassword(e.target.value)}
+                            value={oldpassword}
+                          />
+                          <button
+                            type="button"
+                            onClick={toggleOldPasswordVisibility}
+                            className="absolute inset-y-0 right-1 flex items-center px-3"
+                          >
+                            {showOldPassword ? (
+                              <Eye className="text-black w-5 h-5" />
+                            ) : (
+                              <EyeOff className="text-black w-5 h-5" />
+                            )}
+                          </button>
+                        </div>
+                      </LabelInputContainer>
+
+                      <LabelInputContainer className="mb-4">
+                        <Label htmlFor="password">New Password</Label>
+                        <div className="relative">
+                          <Input
+                            id="password"
+                            placeholder="••••••••"
+                            type={showPassword ? "text" : "password"}
+                            autoComplete="off"
+                            onChange={(e) => setPassword(e.target.value)}
+                            value={password}
+                          />
+                          <button
+                            type="button"
+                            onClick={togglePasswordVisibility}
+                            className="absolute inset-y-0 right-1 flex items-center px-3"
+                          >
+                            {showPassword ? (
+                              <Eye className="text-black w-5 h-5" />
+                            ) : (
+                              <EyeOff className="text-black w-5 h-5" />
+                            )}
+                          </button>
+                        </div>
+                      </LabelInputContainer>
+                      <LabelInputContainer className="mb-4">
+                        <Label htmlFor="confirmPassword">
+                          Confirm New Password
+                        </Label>
+                        <div className="relative">
+                          <Input
+                            id="confirmPassword"
+                            placeholder="••••••••"
+                            type={showConfirmPassword ? "text" : "password"}
+                            autoComplete="current-password"
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            value={confirmPassword}
+                          />
+                          <button
+                            type="button"
+                            onClick={toggleConfirmPasswordVisibility}
+                            className="absolute inset-y-0 right-1 flex items-center px-3"
+                          >
+                            {showConfirmPassword ? (
+                              <Eye className="text-black w-5 h-5" />
+                            ) : (
+                              <EyeOff className="text-black w-5 h-5" />
+                            )}
+                          </button>
+                        </div>
+                      </LabelInputContainer>
+                    </div>
+                    {error && <p className="text-red-500 mb-2">{error}</p>}
+                    {success && (
+                      <p className="text-green-500 mb-2">{success}</p>
+                    )}
+                    <div
+                      className={`${
+                        isMobile
+                          ? "gap-2 items-center justify-center items-center"
+                          : "gap-3"
+                      } flex`}
+                    >
+                      <button
+                        className={`${
+                          isMobile ? "w-full" : "w-24"
+                        } hover:bg-gray-300 bg-gray-200 relative group/btn block rounded-md h-10 font-medium shadow-md`}
+                        type="button" // Change type to "button"
+                        onClick={handleReset}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        className={`${
+                          isMobile ? "w-full" : "w-48"
+                        } hover:bg-indigo-800 bg-indigo-700 relative group/btn block text-white rounded-md h-10 font-medium shadow-md`}
+                        type="submit"
+                      >
+                        Change Password
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                <div
+                  className={`${
+                    isMobile ? "px-6 mt-4" : "px-12"
+                  } card3 py-1 mb-8`}
+                  style={{ height: "fit-content" }}
+                >
+                  <h2
+                    className="font-bold text-xl mt-4 text-neutral-800"
+                    style={{ textAlign: "left" }}
+                  >
+                    Delete Account
+                  </h2>
+                  <p className="text-pretty mt-2">
+                    To permanently erase your whole InterviewAI account, click
+                    the button below.
+                  </p>
+                  <div className="mt-3">
+                    <button
+                      className={`${
+                        isMobile ? "w-full" : "w-40"
+                      } hover:bg-red-700 mb-4 bg-red-600 relative group/btn block text-white rounded-md h-10 font-medium shadow-md`}
+                      type="submit"
+                      onClick={() => setShowModal(true)}
+                    >
+                      Deactivate Account
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           ) : (
-            <p>No user data available</p>
+            <p>Your profile is on its way, just a moment..</p>
           )}
         </div>
       </div>
       {isMobile && <MobileNavbar onLogout={handleLogout} />}
+      <ToastContainer />
+
+      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
+        <Modal.Body className="bg-white rounded-md">
+          <form
+            className="my-4"
+            autoComplete="off"
+            onSubmit={handleDeactivateAccount}
+          >
+            <div className="flex flex-col items-center justify-center">
+              <i
+                className="text-red-500 mb-2 fa fa-circle-exclamation"
+                aria-hidden="true"
+                style={{ fontSize: "2rem" }}
+              ></i>
+              <h4
+                className={cn(
+                  isMobile ? "w-64 text-center bg-gray-100" : "bg-gray-200",
+                  "rounded-md p-2"
+                )}
+              >
+                This step is permanent and cannot be reversed.
+              </h4>
+              <div className="flex gap-2 mt-3">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    className="w-4 h-4"
+                    type="checkbox"
+                    name=""
+                    id=""
+                    required
+                  />
+                  <p className="ml-2 text-md font-medium text-black leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    I confirm my account deactivation
+                  </p>
+                </label>
+              </div>
+              <div className="flex gap-3 mt-3">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className={cn(
+                    isMobile ? "w-50" : "w-20",
+                    "hover:bg-gray-300 bg-gray-200 rounded-md shadow-md"
+                  )}
+                  type="reset"
+                >
+                  Cancel
+                </button>
+                <button
+                  className={cn(
+                    isMobile ? "w-60" : "w-40",
+                    "hover:bg-red-700 bg-red-600 relative group/btn block text-white rounded-md h-10 font-medium shadow-md"
+                  )}
+                  type="submit"
+                >
+                  Deactivate Account
+                </button>
+              </div>
+            </div>
+          </form>
+        </Modal.Body>
+      </Modal>
     </div>
   );
 }
+
+const LabelInputContainer = ({ children, className }) => {
+  return (
+    <div className={cn("flex flex-col space-y-2 w-full", className)}>
+      {children}
+    </div>
+  );
+};

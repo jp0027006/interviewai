@@ -42,7 +42,7 @@ const Sidebar = ({ collapsed, setCollapsed, isMobile }) => {
           collapsed ? "collapsed" : ""
         }`}
         style={{
-          boxShadow: "rgba(0, 0, 0, 0.35) 0px 5px 15px",
+          boxShadow: "rgba(0, 0, 0, 0.20) 0px 5px 15px",
           borderTopRightRadius: "1rem",
           borderBottomRightRadius: "1rem",
           width: collapsed ? "80px" : "250px",
@@ -117,7 +117,10 @@ const Sidebar = ({ collapsed, setCollapsed, isMobile }) => {
                 <span className="flex items-center transition-all duration-300">
                   <span className="flex items-center justify-center">
                     {!collapsed && ""}
-                    <LuHistory className={collapsed ? "ms-1" : ""} size={"22px"} />
+                    <LuHistory
+                      className={collapsed ? "ms-1" : ""}
+                      size={"22px"}
+                    />
                   </span>
                   <span
                     className={`${
@@ -162,10 +165,11 @@ const Sidebar = ({ collapsed, setCollapsed, isMobile }) => {
                 </div>
                 <div className="text content text-center">
                   <h1 className="font-bold text-xl md:text-2xl text-gray-50 relative z-10">
-                    {userData?.firstName || "User"} {userData?.lastName || ""}
+                    {userData?.firstName || "Loading your data"}{" "}
+                    {userData?.lastName || ""}
                   </h1>
                   <p className="font-normal overflow-hidden text-sm text-gray-50 relative -mb-px z-10">
-                    {userData?.email || "Email not available"}
+                    {userData?.email || ""}
                   </p>
                 </div>
               </div>
@@ -228,14 +232,14 @@ const Sidebar = ({ collapsed, setCollapsed, isMobile }) => {
           <p className="text-gray-600 mt-1 mb-3">
             Logging out will return you to the login screen.
           </p>
-          <div className="flex">
-            <Button
-              variant="outline-dark"
+          <div className="flex gap-3">
+            <button
               onClick={() => setShowModal(false)}
-              className="mr-4"
+              className="hover:bg-gray-300 bg-gray-200 rounded-md shadow-md w-20"
+              type="reset"
             >
               Cancel
-            </Button>
+            </button>
             <Button variant="danger" onClick={handleLogout}>
               Logout
             </Button>

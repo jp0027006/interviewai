@@ -28,20 +28,43 @@ export function SignupFormDemo() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 750);
   const navigate = useNavigate();
+
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!validator.isEmail(email)) {
-      showToastMessage("Invalid email address.");
+    // Validation
+    const customEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/; // Basic email format
+    if (!customEmailRegex.test(email)) {
+      showerrorToastMessage("Invalid email address format.");
       return;
     }
 
+    if (!/^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/.test(password)) {
+      showerrorToastMessage("Password must be at least 8 characters long, include at least 1 uppercase letter, 1 number, and 1 special character.");
+      return;
+    }
+    
     if (password !== confirmPassword) {
-      showToastMessage("Passwords do not match.");
+      showerrorToastMessage("Passwords do not match.");
+      return;
+    }
+    if (!firstName || !lastName) {
+      showerrorToastMessage("First name and last name cannot be empty.");
+      return;
+    }
+    if (!/^[a-zA-Z]+$/.test(firstName)) {
+      showerrorToastMessage("First name must contain only alphabets.");
+      return;
+    }
+
+    if (!/^[a-zA-Z]+$/.test(lastName)) {
+      showerrorToastMessage("Last name must contain only alphabets.");
       return;
     }
 
@@ -59,13 +82,28 @@ export function SignupFormDemo() {
 
       Cookies.set("authToken", await user.getIdToken(), { expires: 365 });
       Cookies.set("email", email, { expires: 365 });
-      navigate("/dashboard", { state: { email, firstName, lastName } });
+      showsuccessToastMessage();
+      setTimeout(() => {
+        navigate("/dashboard", { state: { email, firstName, lastName } });
+      }, 6000);
     } catch (error) {
-      showToastMessage("Sign up failed. Please try again.");
+      showerrorToastMessage("Sign up failed. Please try again.");
     }
   };
 
-  const showToastMessage = (message) => {
+  const showsuccessToastMessage = () => {
+    toast.success("Sign up successfully.", {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      theme: "light",
+    });
+  };
+
+  const showerrorToastMessage = (message) => {
     toast.error(message, {
       position: "top-right",
       autoClose: 5000,
@@ -93,7 +131,7 @@ export function SignupFormDemo() {
       Cookies.set("email", email, { expires: 365 });
       navigate("/dashboard", { state: { email, firstName, lastName } });
     } catch (error) {
-      showToastMessage("Google signup failed. Please try again.");
+      showerrorToastMessage("Google signup failed. Please try again.");
     }
   };
 
@@ -115,7 +153,11 @@ export function SignupFormDemo() {
           Ready to get started? Join us now!
         </h6>
         <form className="my-8" onSubmit={handleSubmit} autoComplete="off">
-          <div className="grid grid-cols-1 gap-4 mb-1 md:grid-cols-2">
+          <div
+            className={`${
+              isMobile ? "gap-0" : "gap-4"
+            } grid grid-cols-1 mb-1 md:grid-cols-2 lg:grid-cols-2`}
+          >
             <LabelInputContainer className="mb-4">
               <Label htmlFor="firstName">First Name</Label>
               <Input
@@ -144,7 +186,7 @@ export function SignupFormDemo() {
             <Input
               id="email"
               placeholder="Enter your email"
-              type="email"
+              type="text"
               autoComplete="off"
               onChange={(e) => setEmail(e.target.value)}
               value={email}
@@ -226,9 +268,7 @@ export function SignupFormDemo() {
                   d="M130.55 50.479c24.514 0 41.05 10.589 50.479 19.438l36.844-35.974C195.245 12.91 165.798 0 130.55 0 79.49 0 35.393 29.301 13.925 71.947l42.211 32.783c10.59-31.477 39.891-54.251 74.414-54.251"
                 ></path>
               </svg>
-              <span className="text-white text-sm">
-                Continue with Google
-              </span>
+              <span className="text-white text-sm">Continue with Google</span>
               <span class="gradient-span-1"></span>
               <span class="gradient-span-2"></span>
             </button>
@@ -245,15 +285,6 @@ export function SignupFormDemo() {
     </div>
   );
 }
-
-const BottomGradient = () => {
-  return (
-    <>
-      <span className="group-hover/btn:opacity-100 block transition duration-500 opacity-0 absolute h-px w-full -bottom-px inset-x-0 bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
-      <span className="group-hover/btn:opacity-100 blur-sm block transition duration-500 opacity-0 absolute h-px w-1/2 mx-auto -bottom-px inset-x-10 bg-gradient-to-r from-transparent via-indigo-500 to-transparent" />
-    </>
-  );
-};
 
 const LabelInputContainer = ({ children, className }) => {
   return (

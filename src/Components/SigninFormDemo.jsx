@@ -137,7 +137,7 @@ export function SigninFormDemo() {
         {/* <h2 className="font-bold text-xl text-neutral-800 text-center">
           Log in
         </h2> */}
-        <h6 className="mt-2 -mb-2 text-indigo-700 text-center">
+        <h6 className="mt-2 -mb-2 text-pretty text-indigo-700 text-center">
           Welcome back! Ready to tackle some practice?
         </h6>
         <form className="my-8" onSubmit={handleLogin} autoComplete="off">
