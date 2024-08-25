@@ -80,10 +80,10 @@ const Sidebar = ({ collapsed, setCollapsed, isMobile }) => {
                 to="/dashboard"
                 className={({ isActive, isPending }) =>
                   isPending
-                    ? "text-black no-underline ml-2"
+                    ? "text-black no-underline p-2 rounded-md deactivate"
                     : isActive
                     ? "text-white no-underline p-2 rounded-md active"
-                    : "text-black no-underline ml-2"
+                    : "text-black no-underline p-2 rounded-md deactivate"
                 }
               >
                 <span className="flex items-center transition-all duration-300">
@@ -108,10 +108,10 @@ const Sidebar = ({ collapsed, setCollapsed, isMobile }) => {
                 to="/history"
                 className={({ isActive, isPending }) =>
                   isPending
-                    ? "text-black no-underline ml-2"
+                    ? "text-black no-underline p-2 rounded-md deactivate"
                     : isActive
                     ? "text-white no-underline p-2 rounded-md active"
-                    : "text-black no-underline ml-2"
+                    : "text-black no-underline p-2 rounded-md deactivate"
                 }
               >
                 <span className="flex items-center transition-all duration-300">
@@ -205,12 +205,12 @@ const Sidebar = ({ collapsed, setCollapsed, isMobile }) => {
           >
             <Button
               variant="danger"
-              className={`bg-red-600 flex items-center justify-center relative group/btn block w-full text-white rounded-md h-10 font-medium ${
+              className={`bg-red-600 flex items-center justify-center relative group/btn w-full text-white rounded-md h-10 font-medium ${
                 collapsed ? "icon" : "text-and-icon mt-7"
               }`}
               type="button"
               onClick={() => setShowModal(true)}
-              style={{ transition: "opacity 0.3s ease-in-out" }} // Smooth transition for logout button visibility
+              style={{ transition: "opacity 0.3s ease-in-out" }}
             >
               <span className="flex items-center justify-center">
                 {!collapsed && "Logout"}
