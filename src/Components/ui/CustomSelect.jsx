@@ -1,10 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-const CustomSelect = ({ options, onChange }) => {
+const CustomSelect = ({ options, value, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selected, setSelected] = useState("");
   const [inputValue, setInputValue] = useState("");
   const [isCustomInput, setIsCustomInput] = useState(false);
+
+  useEffect(() => {
+    setSelected(value);
+  }, [value]);
 
   const handleSelect = (option) => {
     setSelected(option.label);

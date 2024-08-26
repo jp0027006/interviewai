@@ -51,6 +51,8 @@ export function Profile() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [lastLoginTime, setLastLoginTime] = useState("");
+  const [creationTime, setCreationTime] = useState("");
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -107,6 +109,8 @@ export function Profile() {
             setLastName(docData.lastName || "");
             setEmail(docData.email || "");
             isInitialLoad.current = false;
+            const user = auth.currentUser;
+            setCreationTime(user.metadata.creationTime);
           }
         } else {
           setError("No user data found");
@@ -123,6 +127,8 @@ export function Profile() {
         navigate("/");
       } else {
         fetchUserData();
+        const lastLogin = user.metadata.lastSignInTime;
+        setLastLoginTime(new Date(lastLogin).toLocaleString());
       }
     });
   }, [navigate, login]);
@@ -327,10 +333,10 @@ export function Profile() {
       <div className="flex justify-center items-center h-screen">
         <svg
           style={{
-            left: '50%',
-            top: '50%',
-            position: 'absolute',
-            transform: 'translate(-50%, -50%) matrix(1, 0, 0, 1, 0, 0)',
+            left: "50%",
+            top: "50%",
+            position: "absolute",
+            transform: "translate(-50%, -50%) matrix(1, 0, 0, 1, 0, 0)",
           }}
           preserveAspectRatio="xMidYMid meet"
           viewBox="0 0 187.3 93.7"
@@ -458,9 +464,7 @@ export function Profile() {
                   </div>
                   <div
                     className={`${
-                      isMobile
-                        ? "gap-2 items-center justify-center"
-                        : "gap-3"
+                      isMobile ? "gap-2 items-center justify-center" : "gap-3"
                     } flex`}
                   >
                     <button
@@ -483,7 +487,7 @@ export function Profile() {
                   </div>
                 </form>
               </div>
-              
+
               <div
                 className={`${
                   isMobile ? "gap-0" : "gap-4 mb-8 -mt-1"
@@ -601,9 +605,7 @@ export function Profile() {
                     </div>
                     <div
                       className={`${
-                        isMobile
-                          ? "gap-2 items-center justify-center"
-                          : "gap-3"
+                        isMobile ? "gap-2 items-center justify-center" : "gap-3"
                       } flex`}
                     >
                       <button
@@ -626,33 +628,64 @@ export function Profile() {
                     </div>
                   </form>
                 </div>
-
-                <div
-                  className={`${
-                    isMobile ? "px-6 mt-4" : "px-12"
-                  } card3 py-1 mb-8`}
-                  style={{ height: "fit-content" }}
-                >
-                  <h2
-                    className="font-bold text-xl mt-4 text-neutral-800"
-                    style={{ textAlign: "left" }}
+                <div className="flex flex-column">
+                  <div
+                    className={`${
+                      isMobile ? "px-6 mt-4 mb-1" : "px-12 mb-8"
+                    } card3 py-1`}
+                    style={{ height: "fit-content" }}
                   >
-                    Delete Account
-                  </h2>
-                  <p className="text-pretty mt-2">
-                    To permanently erase your whole InterviewAI account, click
-                    the button below.
-                  </p>
-                  <div className="mt-3">
-                    <button
-                      className={`${
-                        isMobile ? "w-full" : "w-40"
-                      } hover:bg-red-700 mb-4 bg-red-600 relative group/btn block text-white rounded-md h-10 font-medium shadow-md`}
-                      type="submit"
-                      onClick={() => setShowModal(true)}
+                    <h2
+                      className="font-bold text-xl mt-4 text-neutral-800"
+                      style={{ textAlign: "left" }}
                     >
-                      Deactivate Account
-                    </button>
+                      Account Information
+                    </h2>
+                    <p className="mt-2">
+                      <strong>Last Login:</strong>
+                    </p>
+                    <p>
+                      {lastLoginTime}
+                    </p>
+                    <p className="mt-2">
+                      <strong>Member since:</strong>
+                    </p>
+                    <p className="mb-4">
+                      {new Intl.DateTimeFormat("en-IN", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      }).format(new Date(creationTime))}
+                    </p>
+                  </div>
+
+                  <div
+                    className={`${
+                      isMobile ? "px-6 mt-4" : "px-12"
+                    } card3 py-1 mb-8`}
+                    style={{ height: "fit-content" }}
+                  >
+                    <h2
+                      className="font-bold text-xl mt-4 text-neutral-800"
+                      style={{ textAlign: "left" }}
+                    >
+                      Delete Account
+                    </h2>
+                    <p className="text-pretty mt-2">
+                      To permanently erase your whole InterviewAI account, click
+                      the button below.
+                    </p>
+                    <div className="mt-3">
+                      <button
+                        className={`${
+                          isMobile ? "w-full" : "w-40"
+                        } hover:bg-red-700 mb-4 bg-red-600 relative group/btn block text-white rounded-md h-10 font-medium shadow-md`}
+                        type="submit"
+                        onClick={() => setShowModal(true)}
+                      >
+                        Deactivate Account
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -9,11 +9,13 @@ import Cookies from "js-cookie";
 import Sidebar from "./ui/sidebar";
 import MobileNavbar from "./MobileNavbar";
 import { UserContext } from "../context/UserContext";
+import { useQuestions } from "../context/QuestionsContext";
 import { Label } from "../Components/ui/label";
 import { Input } from "../Components/ui/input";
 import CustomSelect from "../Components/ui/CustomSelect";
 import { Textarea } from "../Components/ui/textarea";
 import { cn } from "../../lib/utils";
+import Interview from './Interview';
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -22,6 +24,13 @@ export function Dashboard() {
   const [error, setError] = useState("");
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 750);
+
+  const [jobRole, setJobRole] = useState("");
+  const [experienceLevel, setExperienceLevel] = useState("");
+  const [jobDescription, setJobDescription] = useState("");
+
+  const { questions, setQuestions } = useQuestions();
+
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 750);
@@ -80,6 +89,53 @@ export function Dashboard() {
     Cookies.remove("email");
     logout();
     navigate("/");
+  };
+
+  const handleReset = () => {
+    setJobRole("");
+    setExperienceLevel("");
+    setJobDescription("");
+  };
+
+  const generateInterviewQuestions = async () => {
+    try {
+      const response = await fetch('http://localhost:3003/api/generate-questions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jobRole,
+          experienceLevel,
+          jobDescription,
+        }),
+      });
+  
+      const data = await response.json();
+      if (response.ok) {
+        const questions = data.questions;
+        setQuestions(questions);
+        console.log("Generated Questions:", questions);
+        // Display or process questions as needed
+      } else {
+        console.error("Error generating questions:", data.error);
+      }
+    } catch (error) {
+      console.error("Error generating questions:", error);
+    }
+  };
+    
+  
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    console.log("Job Role:", jobRole);
+    console.log("Experience Level:", experienceLevel);
+    console.log("Job Description:", jobDescription);
+
+    await generateInterviewQuestions();
+    navigate("/interview");
+    handleReset();
   };
 
   if (loading) {
@@ -158,45 +214,56 @@ export function Dashboard() {
                   className="font-bold text-xl mt-4 text-neutral-800"
                   style={{ textAlign: "left" }}
                 >
-                  Generate Interview
+                  Generate Custom Interview
                 </h2>
-                <form className="my-8" autoComplete="off">
+                <p className="text-neutral-600 mt-2 text-pretty">
+                  Effortlessly create customized interview questions for various
+                  roles and experience levels.
+                </p>
+                <form
+                  className="my-8"
+                  autoComplete="off"
+                  onSubmit={handleSubmit}
+                >
                   <div
                     className={`${
                       isMobile ? "gap-0" : "gap-4"
                     } grid grid-cols-1 mb-1 md:grid-cols-2 lg:grid-cols-2`}
                   >
                     <LabelInputContainer className="mb-4">
-                      <Label htmlFor="firstName">Job Role</Label>
+                      <Label htmlFor="jobRole">Select Job Role</Label>
                       <CustomSelect
                         options={[
-                          { value: "SE", label: "Software Engineer" },
-                          { value: "DS", label: "Data Scientist" },
-                          { value: "PM", label: "Product Manager" },
-                          { value: "UX", label: "UX/UI Designer" },
-                          { value: "MM", label: "Marketing Manager" },
-                          { value: "SR", label: "Sales Representative" },
-                          { value: "PM", label: "Project Manager" },
-                          { value: "GD", label: "Graphic Designer" },
-                          { value: "BA", label: "Business Analyst" },
-                          { value: "FED", label: "Front-End Developer" },
-                          { value: "BED", label: "Back-End Developer" },
-                          { value: "FSD", label: "Full-Stack Developer" },
-                          { value: "DE", label: "DevOps Engineer" },
-                          { value: "CW", label: "Content Writer" },
-                          { value: "HR", label: "HR Specialist" },
-                          { value: "CSS", label: "Customer Support Specialist" },
-                          { value: "QA", label: "Quality Assurance Analyst" },
-                          { value: "NA", label: "Network Administrator" },
-                          { value: "DBA", label: "Database Administrator" },
-                          { value: "SA", label: "Systems Analyst" }
+                          { value: "Software Engineer", label: "Software Engineer" },
+                          { value: "Data Scientist", label: "Data Scientist" },
+                          { value: "Product Manager", label: "Product Manager" },
+                          { value: "UI/UX Designer", label: "UI/UX Designer" },
+                          { value: "Marketing Manager", label: "Marketing Manager" },
+                          { value: "Sales Representative", label: "Sales Representative" },
+                          { value: "Project Manager", label: "Project Manager" },
+                          { value: "Graphic Designer", label: "Graphic Designer" },
+                          { value: "Business Analyst", label: "Business Analyst" },
+                          { value: "Front-End Developer", label: "Front-End Developer" },
+                          { value: "Back-End Developer", label: "Back-End Developer" },
+                          { value: "Full-Stack Developer", label: "Full-Stack Developer" },
+                          { value: "DevOps Engineer", label: "DevOps Engineer" },
+                          { value: "Content Writer", label: "Content Writer" },
+                          { value: "HR Specialist", label: "HR Specialist" },
+                          {
+                            value: "Customer Support Specialist",
+                            label: "Customer Support Specialist",
+                          },
+                          { value: "Quality Assurance Analyst", label: "Quality Assurance Analyst" },
+                          { value: "Network Administrator", label: "Network Administrator" },
+                          { value: "Database Administrator", label: "Database Administrator" },
+                          { value: "Systems Analyst", label: "Systems Analyst" },
                         ]}
-                        
-                        onChange={(value) => console.log(value)}
+                        value={jobRole}
+                        onChange={(value) => setJobRole(value)}
                       />
                     </LabelInputContainer>
                     <LabelInputContainer className="mb-4">
-                      <Label htmlFor="level">Experience Level</Label>
+                      <Label htmlFor="experienceLevel">Experience Level</Label>
                       <div className="container2">
                         <div className="radio-tile-group gap-3">
                           <div className="input-container">
@@ -204,7 +271,12 @@ export function Dashboard() {
                               id="beginner"
                               className="radio-button"
                               type="radio"
-                              name="radio"
+                              name="experienceLevel"
+                              value="beginner"
+                              checked={experienceLevel === "beginner"}
+                              onChange={(e) =>
+                                setExperienceLevel(e.target.value)
+                              }
                             />
                             <div className="radio-tile">
                               <label
@@ -220,7 +292,12 @@ export function Dashboard() {
                               id="intermediate"
                               className="radio-button"
                               type="radio"
-                              name="radio"
+                              name="experienceLevel"
+                              value="intermediate"
+                              checked={experienceLevel === "intermediate"}
+                              onChange={(e) =>
+                                setExperienceLevel(e.target.value)
+                              }
                             />
                             <div className="radio-tile">
                               <label
@@ -233,17 +310,22 @@ export function Dashboard() {
                           </div>
                           <div className="input-container">
                             <input
-                              id="advanced"
+                              id="expert"
                               className="radio-button"
                               type="radio"
-                              name="radio"
+                              name="experienceLevel"
+                              value="expert"
+                              checked={experienceLevel === "expert"}
+                              onChange={(e) =>
+                                setExperienceLevel(e.target.value)
+                              }
                             />
                             <div className="radio-tile">
                               <label
-                                htmlFor="advanced"
+                                htmlFor="expert"
                                 className="radio-tile-label text-sm font-medium"
                               >
-                                Advanced
+                                Expert
                               </label>
                             </div>
                           </div>
@@ -257,19 +339,32 @@ export function Dashboard() {
                     } grid grid-cols-1 mb-1 md:grid-cols-1 lg:grid-cols-1`}
                   >
                     <LabelInputContainer className="mb-4">
-                      <Label htmlFor="lastName">Job Description</Label>
+                      <Label htmlFor="jobDescription">Job Description</Label>
                       <Textarea
-                        id="message"
+                        id="jobDescription"
                         rows="10"
-                        placeholder="Write job description here..."
+                        value={jobDescription}
+                        onChange={(e) => setJobDescription(e.target.value)}
+                        placeholder="Provide a brief job description, highlighting key responsibilities and required skills..."
                       ></Textarea>
                     </LabelInputContainer>
                   </div>
                   <div
                     className={`${
-                      isMobile ? "gap-2 items-center justify-center" : "gap-3"
+                      isMobile
+                        ? "gap-2 items-center justify-center"
+                        : "gap-3 justify-between"
                     } flex`}
                   >
+                    <button
+                      className={`${
+                        isMobile ? "w-full" : "w-24"
+                      } hover:bg-gray-300 bg-gray-200 relative group/btn block rounded-md h-10 font-medium shadow-md`}
+                      type="button"
+                      onClick={handleReset}
+                    >
+                      Clear
+                    </button>
                     <button
                       className={`${
                         isMobile ? "w-full" : "w-40"
@@ -298,6 +393,7 @@ export function Dashboard() {
         </div>
       </div>
       {isMobile && <MobileNavbar onLogout={handleLogout} />}
+      {questions && <Interview questions={questions} />}
     </div>
   );
 }

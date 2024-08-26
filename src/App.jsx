@@ -6,23 +6,34 @@ import { Profile } from "./Components/Profile";
 import { BackgroundGradientAnimationForgot } from "./Components/BackgroundGradientAnimationForgot";
 import { BackgroundGradientAnimationSignin } from "./Components/BackgroundGradientAnimationSignin";
 import { BackgroundGradientAnimationSignup } from "./Components/BackgroundGradientAnimationSignup";
-import ScrollToTop from './Components/ui/ScrollToTop';
+import ScrollToTop from "./Components/ui/ScrollToTop";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { UserProvider } from './context/UserContext';
+import { UserProvider } from "./context/UserContext";
+import { QuestionsProvider } from "./context/QuestionsContext";
+import Interview from "./Components/Interview";
 
 function App() {
   return (
     <UserProvider>
-      <Router>
-      <ScrollToTop />
-        <Routes>
-          <Route path="/" element={<BackgroundGradientAnimationSignin />} />
-          <Route path="/signup" element={<BackgroundGradientAnimationSignup />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/forgotpassword" element={<BackgroundGradientAnimationForgot />} />
-          <Route path="/profile" element={<Profile />} />
-        </Routes>
-      </Router>
+      <QuestionsProvider>
+        <Router>
+          <ScrollToTop />
+          <Routes>
+            <Route path="/" element={<BackgroundGradientAnimationSignin />} />
+            <Route
+              path="/signup"
+              element={<BackgroundGradientAnimationSignup />}
+            />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route
+              path="/forgotpassword"
+              element={<BackgroundGradientAnimationForgot />}
+            />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/interview" element={<Interview />} />
+          </Routes>
+        </Router>
+      </QuestionsProvider>
     </UserProvider>
   );
 }
