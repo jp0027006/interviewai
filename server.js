@@ -28,36 +28,27 @@ app.post('/api/generate-questions', async (req, res) => {
           {
             parts: [
               {
-                text: `Generate a pure json file without any other symbols for only 5 multiple-choice interview questions and its correct answer for a ${jobRole} with ${experienceLevel} experience based on the following job description:
+                text: `Generate a pure json file without any other symbols for only 5 descriptive interview questions and its correct answer for a ${jobRole} with ${experienceLevel} experience based on the following job description:
                       "${jobDescription}"
 
                       Each question should include:
                       - A clear and concise question statement.
-                      - Four answer options labeled "a", "b", "c", and "d".
                       - An indication of the correct answer.
+                      - Include at least two questions related to the job description. For example, if the job description is about software development, include questions about programming languages, frameworks, and tools.
+                      - Include three technical question, including atleast one behavioral question, include one aptitude question
 
                       Provide the output in the following JSON format:
 
                       [
                         {
+                          "questionno": "Question 1",
                           "question": "Your question here?",
-                          "options": {
-                            "a": "Option A",
-                            "b": "Option B",
-                            "c": "Option C",
-                            "d": "Option D"
-                          },
-                          "answer": "a"
+                          "answer": ""
                         },
                         {
+                          "questionno": "Question 2",
                           "question": "Your question here?",
-                          "options": {
-                            "a": "Option A",
-                            "b": "Option B",
-                            "c": "Option C",
-                            "d": "Option D"
-                          },
-                          "answer": "b"
+                          "answer": ""
                         },
                         ...
                       ]`,
@@ -82,6 +73,6 @@ app.get('/test', (req, res) => {
   res.send('Server is working');
 });
 
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on port ${port}`);
 });

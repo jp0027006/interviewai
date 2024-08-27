@@ -6,9 +6,11 @@ export const useQuestions = () => useContext(QuestionsContext);
 
 export const QuestionsProvider = ({ children }) => {
   const [questions, setQuestions] = useState(null);
-
+  const clearQuestions = () => {
+    setQuestions(null);
+  };
   return (
-    <QuestionsContext.Provider value={{ questions, setQuestions }}>
+    <QuestionsContext.Provider value={{ questions, setQuestions, clearQuestions }}>
       {children}
     </QuestionsContext.Provider>
   );

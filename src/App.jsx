@@ -11,6 +11,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { UserProvider } from "./context/UserContext";
 import { QuestionsProvider } from "./context/QuestionsContext";
 import Interview from "./Components/Interview";
+import ViewInterview from "./Components/ViewInterview";
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
             />
             <Route path="/profile" element={<Profile />} />
             <Route path="/interview" element={<Interview />} />
+            <Route path="/viewinterview" element={<ViewInterview />} />
           </Routes>
         </Router>
       </QuestionsProvider>

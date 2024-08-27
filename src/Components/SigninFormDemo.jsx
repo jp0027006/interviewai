@@ -189,7 +189,7 @@ export function SigninFormDemo() {
             </Link>
           </p>
           <button
-            className="relative shadow-md mt-7 hover:bg-indigo-800 bg-indigo-700 group/btn block w-full text-white rounded-md h-10 font-medium shadow-md"
+            className="relative shadow-md mt-7 hover:bg-indigo-800 bg-indigo-700 group/btn block w-full text-white rounded-md h-10 font-medium"
             type="submit"
           >
             Login
@@ -200,7 +200,7 @@ export function SigninFormDemo() {
 
           <div className="flex flex-col space-y-4">
             <button
-              className="relative hover:bg-indigo-800 bg-indigo-700 group/btn shadow-md flex space-x-2 items-center justify-center px-4 w-full rounded-md h-10 font-medium shadow-input"
+              className="relative hover:bg-indigo-800 bg-indigo-700 group/btn shadow-md flex space-x-2 items-center justify-center px-4 w-full rounded-md h-10 font-medium"
               type="button"
               onClick={handleGoogleLogin}
             >
