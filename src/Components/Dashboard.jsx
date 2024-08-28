@@ -1,5 +1,5 @@
 // src/pages/Dashboard.jsx
-import React, { useEffect, useContext, useState } from "react";
+import React, { useEffect, useContext, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { query, where, getDocs, collection } from "firebase/firestore";
 import { db } from "../../src/config/firebase";
@@ -15,7 +15,6 @@ import { Input } from "../Components/ui/input";
 import CustomSelect from "../Components/ui/CustomSelect";
 import { Textarea } from "../Components/ui/textarea";
 import { cn } from "../../lib/utils";
-import Interview from "./Interview";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -34,6 +33,8 @@ export function Dashboard() {
 
   const { questions, setQuestions } = useQuestions();
 
+  const hasFetchedUserData = useRef(false);
+
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 750);
     window.addEventListener("resize", handleResize);
@@ -49,13 +50,13 @@ export function Dashboard() {
       navigate("/");
       return;
     }
-
+  
     const storedEmail = Cookies.get("email");
     if (!storedEmail) {
       navigate("/");
       return;
     }
-
+  
     const fetchUserData = async () => {
       try {
         const q = query(
@@ -63,7 +64,7 @@ export function Dashboard() {
           where("email", "==", storedEmail.toLowerCase().trim())
         );
         const querySnapshot = await getDocs(q);
-
+  
         if (!querySnapshot.empty) {
           const docData = querySnapshot.docs[0].data();
           login(docData);
@@ -76,15 +77,26 @@ export function Dashboard() {
         setLoading(false);
       }
     };
-
-    onAuthStateChanged(auth, (user) => {
+  
+    const onAuthChange = (user) => {
       if (!user) {
         navigate("/");
-      } else {
+      } else if (!hasFetchedUserData.current) {
         fetchUserData();
+        hasFetchedUserData.current = true; // Set the flag to true after fetching data
+      } else {
+        setLoading(false); // If data has already been fetched, stop loading
       }
-    });
+  
+      unsubscribe(); // Unsubscribe immediately after the first invocation
+    };
+  
+    const unsubscribe = onAuthStateChanged(auth, onAuthChange);
+  
+    // Cleanup function to unsubscribe if the component unmounts before onAuthChange triggers
+    return () => unsubscribe();
   }, [navigate, login]);
+  
 
   const handleLogout = () => {
     Cookies.remove("authToken");
@@ -150,11 +162,11 @@ export function Dashboard() {
       showerrorToastMessage("Please enter description about the job.");
       return;
     }
-    
+
     console.log("Job Role:", jobRole);
     console.log("Experience Level:", experienceLevel);
     console.log("Job Description:", jobDescription);
-    
+
     setLoading2(true);
     await generateInterviewQuestions();
     navigate("/interview", {
@@ -207,43 +219,44 @@ export function Dashboard() {
 
   if (loading2) {
     return (
-<div class="analyze flex flex-col justify-center items-center h-screen">
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 24 24"
-    height="65"
-    width="65"
-  >
-    <rect height="24" width="24"></rect>
-    <path
-      stroke-linecap="round"
-      stroke-width="1.5"
-      stroke="#4338CA"
-      opacity={0.9}
-      d="M19.25 9.25V5.25C19.25 4.42157 18.5784 3.75 17.75 3.75H6.25C5.42157 3.75 4.75 4.42157 4.75 5.25V18.75C4.75 19.5784 5.42157 20.25 6.25 20.25H12.25"
-      class="board"
-    ></path>
-    <path
-      d="M9.18748 11.5066C9.12305 11.3324 8.87677 11.3324 8.81234 11.5066L8.49165 12.3732C8.47139 12.428 8.42823 12.4711 8.37348 12.4914L7.50681 12.8121C7.33269 12.8765 7.33269 13.1228 7.50681 13.1872L8.37348 13.5079C8.42823 13.5282 8.47139 13.5714 8.49165 13.6261L8.81234 14.4928C8.87677 14.6669 9.12305 14.6669 9.18748 14.4928L9.50818 13.6261C9.52844 13.5714 9.5716 13.5282 9.62634 13.5079L10.493 13.1872C10.6671 13.1228 10.6671 12.8765 10.493 12.8121L9.62634 12.4914C9.5716 12.4711 9.52844 12.428 9.50818 12.3732L9.18748 11.5066Z"
-      class="star-2"
-    ></path>
-    <path
-      d="M11.7345 6.63394C11.654 6.41629 11.3461 6.41629 11.2656 6.63394L10.8647 7.71728C10.8394 7.78571 10.7855 7.83966 10.717 7.86498L9.6337 8.26585C9.41605 8.34639 9.41605 8.65424 9.6337 8.73478L10.717 9.13565C10.7855 9.16097 10.8394 9.21493 10.8647 9.28335L11.2656 10.3667C11.3461 10.5843 11.654 10.5843 11.7345 10.3667L12.1354 9.28335C12.1607 9.21493 12.2147 9.16097 12.2831 9.13565L13.3664 8.73478C13.5841 8.65424 13.5841 8.34639 13.3664 8.26585L12.2831 7.86498C12.2147 7.83966 12.1607 7.78571 12.1354 7.71728L11.7345 6.63394Z"
-      class="star-1"
-    ></path>
-    <path
-      class="stick"
-      stroke-linejoin="round"
-      stroke-width="1.5"
-      stroke="#4338CA"
-      opacity={0.9}
-      d="M17 14L21.2929 18.2929C21.6834 18.6834 21.6834 19.3166 21.2929 19.7071L20.7071 20.2929C20.3166 20.6834 19.6834 20.6834 19.2929 20.2929L15 16M17 14L15.7071 12.7071C15.3166 12.3166 14.6834 12.3166 14.2929 12.7071L13.7071 13.2929C13.3166 13.6834 13.3166 14.3166 13.7071 14.7071L15 16M17 14L15 16"
-    ></path>
-  </svg>
-  <span className="text-3xl opacity-90 board font-semibold text-indigo-700">Generating Questions</span>
-</div>
-
+      <div class="analyze flex flex-col justify-center items-center h-screen">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          height="65"
+          width="65"
+        >
+          <rect height="24" width="24"></rect>
+          <path
+            stroke-linecap="round"
+            stroke-width="1.5"
+            stroke="#4338CA"
+            opacity={0.9}
+            d="M19.25 9.25V5.25C19.25 4.42157 18.5784 3.75 17.75 3.75H6.25C5.42157 3.75 4.75 4.42157 4.75 5.25V18.75C4.75 19.5784 5.42157 20.25 6.25 20.25H12.25"
+            class="board"
+          ></path>
+          <path
+            d="M9.18748 11.5066C9.12305 11.3324 8.87677 11.3324 8.81234 11.5066L8.49165 12.3732C8.47139 12.428 8.42823 12.4711 8.37348 12.4914L7.50681 12.8121C7.33269 12.8765 7.33269 13.1228 7.50681 13.1872L8.37348 13.5079C8.42823 13.5282 8.47139 13.5714 8.49165 13.6261L8.81234 14.4928C8.87677 14.6669 9.12305 14.6669 9.18748 14.4928L9.50818 13.6261C9.52844 13.5714 9.5716 13.5282 9.62634 13.5079L10.493 13.1872C10.6671 13.1228 10.6671 12.8765 10.493 12.8121L9.62634 12.4914C9.5716 12.4711 9.52844 12.428 9.50818 12.3732L9.18748 11.5066Z"
+            class="star-2"
+          ></path>
+          <path
+            d="M11.7345 6.63394C11.654 6.41629 11.3461 6.41629 11.2656 6.63394L10.8647 7.71728C10.8394 7.78571 10.7855 7.83966 10.717 7.86498L9.6337 8.26585C9.41605 8.34639 9.41605 8.65424 9.6337 8.73478L10.717 9.13565C10.7855 9.16097 10.8394 9.21493 10.8647 9.28335L11.2656 10.3667C11.3461 10.5843 11.654 10.5843 11.7345 10.3667L12.1354 9.28335C12.1607 9.21493 12.2147 9.16097 12.2831 9.13565L13.3664 8.73478C13.5841 8.65424 13.5841 8.34639 13.3664 8.26585L12.2831 7.86498C12.2147 7.83966 12.1607 7.78571 12.1354 7.71728L11.7345 6.63394Z"
+            class="star-1"
+          ></path>
+          <path
+            class="stick"
+            stroke-linejoin="round"
+            stroke-width="1.5"
+            stroke="#4338CA"
+            opacity={0.9}
+            d="M17 14L21.2929 18.2929C21.6834 18.6834 21.6834 19.3166 21.2929 19.7071L20.7071 20.2929C20.3166 20.6834 19.6834 20.6834 19.2929 20.2929L15 16M17 14L15.7071 12.7071C15.3166 12.3166 14.6834 12.3166 14.2929 12.7071L13.7071 13.2929C13.3166 13.6834 13.3166 14.3166 13.7071 14.7071L15 16M17 14L15 16"
+          ></path>
+        </svg>
+        <span className="text-3xl opacity-90 board font-semibold text-indigo-700">
+          Generating Questions
+        </span>
+      </div>
     );
   }
 

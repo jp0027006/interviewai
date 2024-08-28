@@ -53,6 +53,7 @@ export function Profile() {
   const [email, setEmail] = useState("");
   const [lastLoginTime, setLastLoginTime] = useState("");
   const [creationTime, setCreationTime] = useState("");
+  const hasFetchedUserData = useRef(false);
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -84,13 +85,13 @@ export function Profile() {
       navigate("/");
       return;
     }
-
+  
     const storedEmail = Cookies.get("email");
     if (!storedEmail) {
       navigate("/");
       return;
     }
-
+  
     const fetchUserData = async () => {
       try {
         const q = query(
@@ -98,12 +99,10 @@ export function Profile() {
           where("email", "==", storedEmail.toLowerCase().trim())
         );
         const querySnapshot = await getDocs(q);
-
+  
         if (!querySnapshot.empty) {
           const docData = querySnapshot.docs[0].data();
           login(docData);
-
-          // Initialize form state only on initial load
           if (isInitialLoad.current) {
             setFirstName(docData.firstName || "");
             setLastName(docData.lastName || "");
@@ -121,17 +120,28 @@ export function Profile() {
         setLoading(false);
       }
     };
-
-    onAuthStateChanged(auth, (user) => {
+  
+    const onAuthChange = (user) => {
       if (!user) {
         navigate("/");
-      } else {
+      } else if (!hasFetchedUserData.current) {
         fetchUserData();
+        hasFetchedUserData.current = true; // Set the flag to true after fetching data
         const lastLogin = user.metadata.lastSignInTime;
         setLastLoginTime(new Date(lastLogin).toLocaleString());
+      } else {
+        setLoading(false); // If data has already been fetched, stop loading
       }
-    });
+  
+      unsubscribe(); // Unsubscribe immediately after the first invocation
+    };
+  
+    const unsubscribe = onAuthStateChanged(auth, onAuthChange);
+  
+    // Cleanup function to unsubscribe if the component unmounts before onAuthChange triggers
+    return () => unsubscribe();
   }, [navigate, login]);
+  
 
   const handleLogout = () => {
     Cookies.remove("authToken");

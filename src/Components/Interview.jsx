@@ -54,49 +54,6 @@ export function Interview() {
     };
   }, []);
 
-  useEffect(() => {
-    const authToken = Cookies.get("authToken");
-    if (!authToken) {
-      navigate("/");
-      return;
-    }
-
-    const storedEmail = Cookies.get("email");
-    if (!storedEmail) {
-      navigate("/");
-      return;
-    }
-
-    const fetchUserData = async () => {
-      try {
-        const q = query(
-          collection(db, "users"),
-          where("email", "==", storedEmail.toLowerCase().trim())
-        );
-        const querySnapshot = await getDocs(q);
-
-        if (!querySnapshot.empty) {
-          const docData = querySnapshot.docs[0].data();
-          login(docData);
-        } else {
-          setError("No user data found");
-        }
-      } catch (error) {
-        setError("Error fetching user data");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        navigate("/");
-      } else {
-        fetchUserData();
-      }
-    });
-  }, [navigate, login]);
-
   const handlequit = () => {
     navigate("/dashboard");
     clearQuestions();
@@ -172,7 +129,7 @@ export function Interview() {
       showsuccessToastMessage("Submission successful!");
       setShowModal2(false);
       setTimeout(() => {
-        navigate("/viewinterview", { state: { interviewID } });
+        navigate("/viewfeedback", { state: { interviewID , questions, answers, jobRole, experienceLevel, jobDescription } });
       }, 6000);
     } catch (error) {
       console.error("Error during submission:", error);
