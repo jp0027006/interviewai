@@ -19,10 +19,10 @@ app.use(bodyParser.json());
 
 app.post("/api/generate-questions", async (req, res) => {
   try {
-    const { jobRole, experienceLevel, jobDescription } = req.body; // Destructure the request body
+    const { jobRole, experienceLevel, jobDescription } = req.body;
     const response = await axios({
       url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${
-        process.env.VITE_API_GENERATIVE_LANGUAGE_CLIENT // Use the correct environment variable syntax for Node.js
+        process.env.VITE_API_GENERATIVE_LANGUAGE_CLIENT
       }`,
       method: "post",
       data: {
@@ -61,10 +61,8 @@ app.post("/api/generate-questions", async (req, res) => {
       },
     });
 
-    // Assuming the structure of the response is correct
-    const generatedQuestions =
-      response.data.candidates[0].content.parts[0].text;
-    res.json({ questions: generatedQuestions }); // Send the generated questions as the response
+    const generatedQuestions = response.data.candidates[0].content.parts[0].text;
+    res.json({ questions: generatedQuestions });
   } catch (error) {
     console.error("Error generating questions:", error);
     res.status(500).json({ error: "Error generating questions" });
@@ -75,20 +73,9 @@ app.post("/api/generate-feedback", async (req, res) => {
   try {
     const { interviewID, questions, answers, jobRole, experienceLevel, jobDescription } = req.body;
 
-    // Validate that questions and answers are arrays
     if (!Array.isArray(questions) || !Array.isArray(answers)) {
       throw new Error("Invalid data format: questions and answers must be arrays");
     }
-
-    // Convert the questions and answers arrays to a string representation
-    const questionsText = questions
-      .map((q, index) => `Question ${index + 1}: ${q}`)
-      .join("\n");
-    const answersText = answers
-      .map((a, index) => `Answer ${index + 1}: ${a}`)
-      .join("\n");
-
-    console.log("Requesting feedback generation...");
 
     const response = await axios({
       url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${process.env.VITE_API_GENERATIVE_LANGUAGE_CLIENT}`,
@@ -98,13 +85,13 @@ app.post("/api/generate-feedback", async (req, res) => {
           {
             parts: [
               {
-                text: `Generate a pure json file without any other symbols for feedback of this interview with the following questions:
+                text: `Generate a pure json file without any other unnecessary symbols for feedback of this interview with the following questions and answers:
 
-                      ${questionsText}
+                      Questions:
+                      ${questions.map((q, index) => `Question ${index + 1}: ${q}`).join("\n")}
 
-                      and the following answers:
-
-                      ${answersText}
+                      Answers:
+                      ${answers.map((a, index) => `Answer ${index + 1}: ${a}`).join("\n")}
 
                       This feedback is for a user who selected a ${jobRole} role with ${experienceLevel} experience based on the following job description:
                       "${jobDescription}"
@@ -112,6 +99,7 @@ app.post("/api/generate-feedback", async (req, res) => {
                       Each feedback should include:
                       - A clear and concise pros and cons statement.
                       - The answer provided by the user.
+                      - The question provided by the user.
                       - An overall rating out of 10 after reviewing the user's answer.
                       - Strength points in the user's answer.
                       - Weak points in the user's answer.
@@ -119,43 +107,60 @@ app.post("/api/generate-feedback", async (req, res) => {
                       - If user not write a proper answer, then show pros as None. 
 
                       Provide the output in the following JSON format:
-                      
-                      {
-                        "feedback": [
-                          {
-                            "questionno": "Question 1",
-                            "question": "${questionsText}",
-                            "answer": "${answersText}",
-                            "rating": "Overall rating out of 10 after reviewing the user's answer",
-                            "pros": "Strength points in answer",
-                            "cons": "Weak points in answer",
-                            "suggestion": "Suggestion to improve answer"
-                          },
-                          {
-                            "questionno": "Question 2",
-                            "question": "${questionsText}",
-                            "answer": "${answersText}",
-                            "rating": "Overall rating out of 10 after reviewing the user's answer",
-                            "pros": "Strength points in answer",
-                            "cons": "Weak points in answer",
-                            "suggestion": "Suggestion to improve answer"
-                          }
-                          ...
-                        ],
-                        "jobRole": "${jobRole}",
-                        "experienceLevel": "${experienceLevel}",
-                        "jobDescription": "${jobDescription}"
-                        "interviewID": "${interviewID}"
-                      }
-                      `,
+
+                      [
+                        {
+                          "questionno": "Question 1",
+                          "question": "question 1 statement",
+                          "answer": "${answers[0]}",
+                          "rating": "Overall rating out of 10 after reviewing the user's answer",
+                          "pros": "Strength points in the user's answer",
+                          "cons": "Weak points in the user's answer",
+                          "suggestion": "Suggestions to improve the user's answer"
+                        },
+                        {
+                          "questionno": "Question 2",
+                          "question": "question 2 statement",
+                          "answer": "${answers[1]}",
+                          "rating": "Overall rating out of 10 after reviewing the user's answer",
+                          "pros": "Strength points in the user's answer",
+                          "cons": "Weak points in the user's answer",
+                          "suggestion": "Suggestions to improve the user's answer"
+                        },
+                        {
+                          "questionno": "Question 3",
+                          "question": "question 3 statement",
+                          "answer": "${answers[2]}",
+                          "rating": "Overall rating out of 10 after reviewing the user's answer",
+                          "pros": "Strength points in the user's answer",
+                          "cons": "Weak points in the user's answer",
+                          "suggestion": "Suggestions to improve the user's answer"
+                        },
+                        {
+                          "questionno": "Question 4",
+                          "question": "question 4 statement",
+                          "answer": "${answers[3]}",
+                          "rating": "Overall rating out of 10 after reviewing the user's answer",
+                          "pros": "Strength points in the user's answer",
+                          "cons": "Weak points in the user's answer",
+                          "suggestion": "Suggestions to improve the user's answer"
+                        },
+                        {
+                          "questionno": "Question 5",
+                          "question": "question 5 statement",
+                          "answer": "${answers[4]}",
+                          "rating": "Overall rating out of 10 after reviewing the user's answer",
+                          "pros": "Strength points in the user's answer",
+                          "cons": "Weak points in the user's answer",
+                          "suggestion": "Suggestions to improve the user's answer"
+                        },
+                      ]`
               },
             ],
           },
         ],
       },
     });
-
-    console.log("External API response:", response.data);
 
     const generatedFeedback = response.data.candidates[0].content.parts[0].text;
     res.json({ feedback: generatedFeedback });
@@ -164,8 +169,6 @@ app.post("/api/generate-feedback", async (req, res) => {
     res.status(500).json({ error: "Error generating feedback" });
   }
 });
-
-
 
 app.get("/test", (req, res) => {
   res.send("Server is working");
