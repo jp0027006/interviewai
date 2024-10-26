@@ -11,14 +11,19 @@ import MobileNavbar from "./MobileNavbar";
 import { UserContext } from "../context/UserContext";
 import { useQuestions } from "../context/QuestionsContext";
 import { Label } from "../Components/ui/label";
-import { Input } from "../Components/ui/input";
 import CustomSelect from "../Components/ui/CustomSelect";
 import { Textarea } from "../Components/ui/textarea";
 import { cn } from "../../lib/utils";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import dashboard_image from "../assets/Work_In_Beanbag.png";
+import Growth_Progress from "../assets/Growth_Progress.png";
 
 export function Dashboard() {
+  const [currentCount, setCurrentCount] = useState(0);
+
+  const [totalInterviews, setTotalInterviews] = useState(0);
+
   const navigate = useNavigate();
   const { userData, login, logout } = useContext(UserContext);
   const [loading, setLoading] = useState(true);
@@ -35,6 +40,39 @@ export function Dashboard() {
 
   const hasFetchedUserData = useRef(false);
 
+  const [loaded, setLoaded] = useState(false);
+
+  const handleImageLoaded = () => {
+    setLoaded(true);
+  };
+
+  useEffect(() => {
+    let start = currentCount; // Start from the current count
+    const end = totalInterviews; // End at the totalInterviews value
+    if (start === end) return; // If the number hasn't changed, do nothing
+
+    const duration = 500; // Animation duration in ms
+    const incrementTime = Math.abs(Math.floor(duration / (end - start))); // How often to update the number
+
+    let timer;
+
+    if (end > start) {
+      timer = setInterval(() => {
+        start += 1;
+        setCurrentCount(start);
+        if (start >= end) clearInterval(timer); // Stop once we reach the target number
+      }, incrementTime);
+    } else {
+      timer = setInterval(() => {
+        start -= 1;
+        setCurrentCount(start);
+        if (start <= end) clearInterval(timer); // Stop once we reach the target number
+      }, incrementTime);
+    }
+
+    return () => clearInterval(timer); // Clean up the interval on unmount
+  }, [totalInterviews]);
+
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 750);
     window.addEventListener("resize", handleResize);
@@ -50,13 +88,13 @@ export function Dashboard() {
       navigate("/");
       return;
     }
-  
+
     const storedEmail = Cookies.get("email");
     if (!storedEmail) {
       navigate("/");
       return;
     }
-  
+
     const fetchUserData = async () => {
       try {
         const q = query(
@@ -64,7 +102,7 @@ export function Dashboard() {
           where("email", "==", storedEmail.toLowerCase().trim())
         );
         const querySnapshot = await getDocs(q);
-  
+
         if (!querySnapshot.empty) {
           const docData = querySnapshot.docs[0].data();
           login(docData);
@@ -77,26 +115,47 @@ export function Dashboard() {
         setLoading(false);
       }
     };
-  
+
+    const fetchTotalInterviews = async () => {
+      try {
+        // Query to fetch interviews where email matches the logged-in user's email
+        const q = query(
+          collection(db, "submissions"),
+          where("email", "==", storedEmail)
+        );
+        const querySnapshot = await getDocs(q);
+
+        // Set the total number of interviews
+        setTotalInterviews(querySnapshot.size);
+      } catch (error) {
+        console.error("Error fetching interviews: ", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     const onAuthChange = (user) => {
       if (!user) {
         navigate("/");
       } else if (!hasFetchedUserData.current) {
-        fetchUserData();
+        fetchUserData().then(() => {
+          fetchTotalInterviews(); // Fetch interviews after user data is loaded
+          setLoading(false); // Stop loading after both operations are complete
+        });
         hasFetchedUserData.current = true; // Set the flag to true after fetching data
       } else {
         setLoading(false); // If data has already been fetched, stop loading
       }
-  
+
       unsubscribe(); // Unsubscribe immediately after the first invocation
     };
-  
+
     const unsubscribe = onAuthStateChanged(auth, onAuthChange);
-  
+
     // Cleanup function to unsubscribe if the component unmounts before onAuthChange triggers
     return () => unsubscribe();
+    fetchTotalInterviews();
   }, [navigate, login]);
-  
 
   const handleLogout = () => {
     Cookies.remove("authToken");
@@ -117,7 +176,6 @@ export function Dashboard() {
       const response = await fetch(
         "http://192.168.31.127:3003/api/generate-questions",
         {
-          // Use the server's local network IP address
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -229,8 +287,8 @@ export function Dashboard() {
         >
           <rect height="24" width="24"></rect>
           <path
-            stroke-linecap="round"
-            stroke-width="1.5"
+            strokeLinejoin="round"
+            strokeWidth="1.5"
             stroke="#4338CA"
             opacity={0.9}
             d="M19.25 9.25V5.25C19.25 4.42157 18.5784 3.75 17.75 3.75H6.25C5.42157 3.75 4.75 4.42157 4.75 5.25V18.75C4.75 19.5784 5.42157 20.25 6.25 20.25H12.25"
@@ -246,8 +304,8 @@ export function Dashboard() {
           ></path>
           <path
             class="stick"
-            stroke-linejoin="round"
-            stroke-width="1.5"
+            strokeLinejoin="round"
+            strokeWidth="1.5"
             stroke="#4338CA"
             opacity={0.9}
             d="M17 14L21.2929 18.2929C21.6834 18.6834 21.6834 19.3166 21.2929 19.7071L20.7071 20.2929C20.3166 20.6834 19.6834 20.6834 19.2929 20.2929L15 16M17 14L15.7071 12.7071C15.3166 12.3166 14.6834 12.3166 14.2929 12.7071L13.7071 13.2929C13.3166 13.6834 13.3166 14.3166 13.7071 14.7071L15 16M17 14L15 16"
@@ -282,9 +340,74 @@ export function Dashboard() {
             : "calc(100% - 250px)",
         }}
       >
-        <div className={`${isMobile ? "p-4" : "px-16 mt-5"}`}>
+        <div className={`${isMobile ? "p-4" : "px-16 mt-4"}`}>
           {userData ? (
             <div>
+              {/* <div
+                className={`${
+                  isMobile ? "flex-col gap-0" : "flex-row gap-4"
+                } flex`}
+              >
+                <div
+                  className={`${isMobile ? "px-6" : "px-12"} card3 mt-6`}
+                  style={{ height: "fit-content" }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2
+                        className="font-bold text-2xl mt-4 text-neutral-800"
+                        style={{ textAlign: "left" }}
+                      >
+                        Total Interview
+                      </h2>
+                      <p className="text-5xl mt-2 mb-4 text-pretty text-neutral-800">
+                      {currentCount}
+                        </p>
+                    </div>
+                    <img
+                      height="100"
+                      width="100"
+                      className={`h-52 w-auto scale-110 transition-opacity duration-400 ${
+                        loaded ? "opacity-100" : "opacity-0"
+                      }`}
+                      alt="Dashboard image"
+                      src={dashboard_image}
+                      onLoad={handleImageLoaded}
+                      style={{ transition: "opacity 0.6s ease-in-out" }}
+                    />
+                  </div>
+                </div>
+
+                <div
+                  className={`${isMobile ? "px-6" : "px-12"} card3 mt-6`}
+                  style={{ height: "fit-content" }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2
+                        className="font-bold text-2xl mt-4 text-neutral-800"
+                        style={{ textAlign: "left" }}
+                      >
+                        Total Interview
+                      </h2>
+                      <p className="text-5xl mt-2 mb-4 text-pretty text-neutral-800">
+                        4
+                      </p>
+                    </div>
+                    <img
+                      height="100"
+                      width="100"
+                      className={`h-52 w-auto transition-opacity duration-400 ${
+                        loaded ? "opacity-100" : "opacity-0"
+                      }`}
+                      alt="Growth Progress"
+                      src={Growth_Progress}
+                      onLoad={handleImageLoaded}
+                      style={{ transition: "opacity 0.6s ease-in-out" }}
+                    />
+                  </div>
+                </div>
+              </div> */}
               <div
                 className={`${
                   isMobile ? "px-6" : "px-12"

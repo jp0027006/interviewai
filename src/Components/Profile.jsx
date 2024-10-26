@@ -56,6 +56,7 @@ export function Profile() {
   const hasFetchedUserData = useRef(false);
 
   const togglePasswordVisibility = () => {
+    
     setShowPassword(!showPassword);
   };
 

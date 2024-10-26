@@ -1,5 +1,5 @@
 import React, { useEffect, useContext, useState, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import {
   doc,
   query,
@@ -102,12 +102,13 @@ export function Interview() {
       }
       return answers[index];
     });
+    const questionList = parsedQuestions.map(q => q.question);
 
     try {
       // Prepare data to be saved
       const submissionData = {
         email: Cookies.get("email"),
-        questions: parsedQuestions, // Store all questions
+        questionList: questionList, // Store all questions
         answers: filledAnswers, // Store all answers
         timestamp: new Date(),
         interviewID: interviewID,
@@ -115,7 +116,7 @@ export function Interview() {
         experienceLevel: experienceLevel, // Store the experience level
         jobDescription: jobDescription, // Store the job description
       };
-
+      console.log("Parsed>>>>>>>",questionList);
       if (!submissionData.email) {
         throw new Error("User Email is not available");
       }
@@ -129,7 +130,7 @@ export function Interview() {
       showsuccessToastMessage("Submission successful!");
       setShowModal2(false);
       setTimeout(() => {
-        navigate("/viewfeedback", { state: { interviewID , questions, answers, jobRole, experienceLevel, jobDescription } });
+        navigate("/viewfeedback", { state: { interviewID , questionList, answers, jobRole, experienceLevel, jobDescription } });
       }, 6000);
     } catch (error) {
       console.error("Error during submission:", error);
@@ -282,7 +283,19 @@ export function Interview() {
               </div>
             </div>
           ) : (
-            <p>No user data available</p>
+              <div className="flex flex-col justify-center items-center pt-56">
+                <p className={`${
+                    isMobile ? "text-center" : ""
+                  } text-pretty`}>Click the button below to go to the Dashboard and start generating questions!</p>
+                <Link
+                  to="/dashboard"
+                  className={`${
+                    isMobile ? "w-40" : "w-40"
+                  } hover:bg-indigo-800 mt-3 bg-indigo-700 relative text-white p-2 rounded-md text-center font-medium shadow-md`}
+                >
+                  Dashboard
+                </Link>
+              </div>
           )}
         </div>
       </div>

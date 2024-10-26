@@ -14,6 +14,7 @@ import { FeedbackProvider } from "./context/FeedbackContext";
 import Interview from "./Components/Interview";
 import ViewInterview from "./Components/ViewInterview";
 import ViewFeedback from "./Components/ViewFeedback";
+import History from "./Components/History";
 
 function App() {
   return (
@@ -35,8 +36,9 @@ function App() {
               />
               <Route path="/profile" element={<Profile />} />
               <Route path="/interview" element={<Interview />} />
-              <Route path="/viewinterview" element={<ViewInterview />} />
+              <Route path="/viewinterview/:interviewID" element={<ViewInterview />} />
               <Route path="/viewfeedback" element={<ViewFeedback />} />
+              <Route path="/history" element={<History />} />
             </Routes>
           </Router>
         </FeedbackProvider>

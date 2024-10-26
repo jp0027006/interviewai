@@ -246,6 +246,7 @@ const Sidebar = ({ collapsed, setCollapsed, isMobile }) => {
           </div>
         </Modal.Body>
       </Modal>
+      
     </div>
   );
 };
