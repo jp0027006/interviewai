@@ -1,11 +1,25 @@
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom"; // To get interviewID from URL
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "../../src/config/firebase";
+import React, { useContext, useEffect, useState, useRef } from "react";
+import { useNavigate,useParams } from "react-router-dom"; // To get interviewID from URL
+import {
+  deleteDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  getDoc
+} from "firebase/firestore";
+import { db, auth } from "../../src/config/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 import Sidebar from "./ui/sidebar";
 import MobileNavbar from "./MobileNavbar";
+import { UserContext } from "../context/UserContext";
+import Cookies from "js-cookie";
 
 const ViewInterview = () => {
+  const navigate = useNavigate();
+  const { userData, login, logout } = useContext(UserContext);
+  const hasFetchedUserData = useRef(false);
   const { interviewID } = useParams(); // Get interviewID from the URL
   const [interviewData, setInterviewData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -23,6 +37,19 @@ const ViewInterview = () => {
   }, []);
 
   useEffect(() => {
+
+    const authToken = Cookies.get("authToken");
+    if (!authToken) {
+      navigate("/");
+      return;
+    }
+
+    const storedEmail = Cookies.get("email");
+    if (!storedEmail) {
+      navigate("/");
+      return;
+    }
+
     const fetchInterviewData = async () => {
       if (!interviewID) {
         setError("No interview ID provided.");
@@ -30,7 +57,6 @@ const ViewInterview = () => {
         return;
       }
       try {
-        // Fetch interview data from Firestore
         const docRef = doc(db, "feedbacks", interviewID);
         const docSnap = await getDoc(docRef);
 
@@ -46,8 +72,57 @@ const ViewInterview = () => {
       }
     };
 
-    fetchInterviewData();
-  }, [interviewID]);
+    const fetchUserData = async (storedEmail) => {
+      try {
+        const q = query(
+          collection(db, "users"),
+          where("email", "==", storedEmail.toLowerCase().trim())
+        );
+        const querySnapshot = await getDocs(q);
+        console.log("Query snapshot:", querySnapshot);
+    
+        if (!querySnapshot.empty) {
+          const docData = querySnapshot.docs[0].data();
+          console.log("User data found:", docData);
+          login(docData); // Update UserContext
+        } else {
+          console.error("No user data found");
+          setError("No user data found");
+        }
+      } catch (error) {
+        console.error("Firestore error:", error);
+        setError("Error fetching user data");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+
+    const onAuthChange = async (user) => {
+      if (!user) {
+        navigate("/");
+      } else {
+        const authToken = Cookies.get("authToken");
+        const storedEmail = Cookies.get("email");
+
+        if (!authToken || !storedEmail) {
+          navigate("/");
+          return;
+        }
+
+        if (!hasFetchedUserData.current) {
+          await fetchUserData(storedEmail);
+          await fetchInterviewData();
+          hasFetchedUserData.current = true;
+        } else {
+          setLoading(false); 
+        }
+      }
+    };
+
+    const unsubscribe = onAuthStateChanged(auth, onAuthChange);
+    return () => unsubscribe();
+  }, [interviewID, navigate, login]);
 
   const handleLogout = () => {
     Cookies.remove("authToken");
@@ -104,7 +179,7 @@ const ViewInterview = () => {
 
   return (
     <div className="relative flex overflow-hidden">
-      {!isMobile && (
+      {!isMobile && userData && (
         <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
       )}
       <div
@@ -223,7 +298,7 @@ const ViewInterview = () => {
               </div>
             </div>
           ) : (
-            <p>Your Interview is on its way, just a moment..</p>
+            <p>Your Feedback is on its way, just a moment..</p>
           )}
         </div>
       </div>
